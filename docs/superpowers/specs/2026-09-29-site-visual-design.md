@@ -10,7 +10,7 @@ Dials: VARIANCE 8, MOTION 7, DENSITY 3.
 ## Concept: Route Profile + 3D touring diorama hero
 - **Structure (A):** an SVG elevation line is the page spine. Draws on scroll, rider dot follows. Sections are waypoints. Stays 2D.
 - **Hero (3D, chosen 2026-09-30):** three.js low-poly floating island. Snow-capped peaks, lake, winding dirt road, pines, clouds. Loaded touring cyclist (rust bike = accent, tan panniers) rides the road as the visitor scrolls. Sticky split hero: copy left, scene right. Prototype: `docs/superpowers/prototypes/touring-diorama.html` (artifact https://claude.ai/artifact/PMxjmBzkgBGCiRSNs6M6h4).
-- 3D only in hero. Never mix with flat SVG illustration.
+- 3D in hero, Experience and Work (2026-10-02, prototype `prototype/index.html`). All three share one clay look + light rig. Never mix with flat SVG illustration.
 - Superseded: layered 2D parallax crag hero (B-lite).
 - Rejected: full playful "field guide" (C), reads unserious to backend recruiters.
 
@@ -18,8 +18,8 @@ Dials: VARIANCE 8, MOTION 7, DENSITY 3.
 | Section | Treatment |
 |---|---|
 | Hero | 3D diorama (sticky, scroll rides bike), name, one-line role, 1 CTA, route readout (km / climb / grade) |
-| Experience | Waypoints on elevation line, one per role |
-| Projects | Topo-style route cards with grade label, link to Case Study |
+| Experience | Sticky 3D sport crag: one bolt per role, anchor = "Your team?". Climber clips a draw per role on scroll; belayer + rope. Stepper + height/draws readout |
+| Projects | Sticky first-person ride: bars + bar bag in frame, dirt road through the clay valley, one roadside sign per project (name, grade, host). Scroll pedals to each sign; project details + link swap in on the left |
 | Resume | Link only. Page + PDF stay plain (ADR 0001) |
 | 404 | "Off route" |
 

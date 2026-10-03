@@ -2,7 +2,7 @@
 <title>Alan Tay Portfolio</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: fixed nav; sticky split 3D hero; Experience as elevation profile; Work as topo route cards; plain resume + contact */
+/* Layout: fixed nav; sticky split 3D hero; Experience as sticky 3D sport crag (bolt per role); Work as a first-person ride past one roadside sign per project; plain resume + contact */
 :root {
   --bg: #eceeea;
   --surface: #e4e7e2;
@@ -47,8 +47,8 @@ h1, h2, h3 { text-wrap: balance; }
 /* Hero */
 .stage { position: relative; height: 540vh; }
 .sticky {
-  position: sticky; top: 0; height: 100vh; height: 100dvh;
-  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; gap: 24px;
+  position: sticky; top: 0; height: 100vh; height: 100dvh; box-sizing: border-box;
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: minmax(0, 1fr); align-items: center; gap: 24px;
   padding-inline: var(--gutter); padding-top: 64px; overflow: hidden;
 }
 .copy { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; min-width: 0; }
@@ -68,7 +68,7 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 66px); line-height: 1.04; letter-s
 }
 .ch.on { transition: opacity 350ms ease 150ms, transform 450ms cubic-bezier(.2,.7,.2,1) 150ms, visibility 0s; }
 .ch:not(.on) { opacity: 0; transform: translateY(14px); visibility: hidden; pointer-events: none; }
-.ch h2 { margin: 0; font-size: clamp(34px, 3.8vw, 54px); line-height: 1.06; letter-spacing: -0.03em; font-weight: 600; }
+.ch h2, .ch h3 { margin: 0; font-size: clamp(34px, 3.8vw, 54px); line-height: 1.06; letter-spacing: -0.03em; font-weight: 600; }
 .kicker { color: var(--accent-text); letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
 .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .tags li { border: 1px solid var(--rule); padding: 5px 10px; font: 12px var(--mono); color: var(--ink); transition: opacity 300ms ease, transform 300ms ease; transition-delay: calc(250ms + var(--i, 0) * 60ms); }
@@ -96,8 +96,10 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 66px); line-height: 1.04; letter-s
 .cp.on { opacity: 1; }
 .cp b { color: var(--accent-text); font-weight: 500; }
 .cp.below { transform: translate(-50%, 8px); }
+.cp.side { transform: translate(12px, -50%); }
 .scene-wrap { position: relative; height: 100%; min-width: 0; }
-#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.scene-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .hint { position: absolute; right: 0; bottom: 28px; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
 .fallback { position: absolute; inset: 0; display: grid; place-items: center; }
 
@@ -107,50 +109,14 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 66px); line-height: 1.04; letter-s
 .head h2 { margin: 0; font-size: clamp(36px, 3.6vw, 52px); letter-spacing: -0.03em; font-weight: 600; line-height: 1.05; }
 .head p { margin: 0; max-width: 52ch; color: var(--muted); font-size: 17px; }
 
-/* Experience: desktop profile */
-.profile { position: relative; }
-.profile svg { display: block; width: 100%; height: auto; overflow: visible; }
-.stops { position: relative; height: 190px; margin-top: 12px; }
-.stop { position: absolute; top: 0; width: min(24%, 300px); padding-left: 12px; display: flex; flex-direction: column; gap: 4px; }
-.stop .role { font-size: 20px; font-weight: 600; line-height: 1.25; }
-.stop .org { color: var(--muted); }
-.stop .hi { margin-top: 6px; font-size: 15px; }
-.stop.next { opacity: 0.5; }
-.wp-fill { fill: var(--bg); transition: fill 300ms ease; }
-.wp.on .wp-fill { fill: var(--accent-text); }
-.wp-ring, .wp-halo { transform-box: fill-box; transform-origin: center; opacity: 0; }
-.wp.on .wp-ring { animation: pulse 800ms ease-out 1 both; }
-.wp.on .wp-halo { opacity: 0.4; transition: opacity 400ms ease 300ms; }
-@keyframes pulse { from { transform: scale(1); opacity: 0.6; } to { transform: scale(2.6); opacity: 0; } }
-/* Experience: mobile timeline */
-.timeline { display: none; position: relative; padding-left: 32px; }
-.tl-track, .tl-fill { position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; }
-.tl-track { background: repeating-linear-gradient(var(--accent-text) 0 2px, transparent 2px 9px); opacity: 0.5; }
-.tl-fill { background: var(--accent-text); transform-origin: top; transform: scaleY(0); }
-.tl-item { position: relative; padding-bottom: 40px; display: flex; flex-direction: column; gap: 4px; }
-.tl-item::before { content: ""; position: absolute; left: -31px; top: 4px; width: 12px; height: 12px; border: 2px solid var(--accent-text); background: var(--bg); border-radius: 50%; box-sizing: border-box; transition: background 300ms ease; }
-.tl-item.on::before { background: var(--accent-text); }
-.tl-item .role { font-size: 19px; font-weight: 600; }
-.tl-item .org { color: var(--muted); }
+/* Experience: sticky crag, one chapter per bolt (role) */
+.climb { position: relative; height: 480vh; border-top: 1px solid var(--rule); }
+.ch .org { margin: 0; font-size: 19px; font-weight: 500; }
 
-/* Work */
-.cards { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 24px; }
-.card .meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
-.card .facts { color: var(--muted); font-size: 12px; }
-.card { display: flex; flex-direction: column; border: 1px solid var(--rule); background: var(--bg); transition: transform 120ms ease, border-color 200ms ease; }
-.card:hover { border-color: var(--muted); }
-.card:active { transform: translateY(1px); }
-.card svg { display: block; width: 100%; height: auto; aspect-ratio: 400 / 220; background: var(--surface); }
-.card .topo path { fill: none; stroke: var(--topo); stroke-width: 1.2; }
-.card .route { fill: none; stroke: var(--accent-text); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 700ms cubic-bezier(.4,0,.2,1); }
-.card:hover .route, .card:focus-visible .route { stroke-dashoffset: 0; }
-.card .rp { fill: var(--accent-text); }
-.card .body { padding: 20px 20px 24px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.grade { color: var(--accent-text); display: inline-block; transition: transform 250ms ease; }
-.card:hover .grade { transform: translateY(-3px); }
-.card h3 { margin: 4px 0 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
-.card p { margin: 0; color: var(--muted); font-size: 15px; }
-.card .more { margin-top: auto; padding-top: 14px; font-weight: 500; font-size: 15px; }
+/* Work: sticky first-person ride, one chapter per roadside sign (project) */
+.ride { position: relative; height: 310vh; border-top: 1px solid var(--rule); }
+.ch .stack { max-width: 46ch; line-height: 1.7; }
+.ride .scene-wrap canvas { -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent); }
 
 /* Resume + contact */
 .contact { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; }
@@ -160,15 +126,6 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 66px); line-height: 1.04; letter-s
 .rows .val { overflow-wrap: anywhere; }
 .copybtn { height: 32px; padding: 0 10px; border: 1px solid var(--rule); background: transparent; color: var(--ink); font: 500 12px var(--mono); cursor: pointer; border-radius: 0; }
 .foot { padding-block: 32px; padding-inline: var(--gutter); border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
-
-/* Reveal: only hidden when JS is running and motion is allowed */
-.js .rv { transition: opacity 500ms ease, transform 500ms cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--i, 0) * 80ms); }
-.js .rv:not(.in) { opacity: 0; transform: translateY(16px); }
-@media (prefers-reduced-motion: reduce) {
-  .js .rv:not(.in) { opacity: 1; transform: none; }
-  .card .route { stroke-dashoffset: 0; transition: none; }
-  .wp.on .wp-ring { animation: none; }
-}
 
 @media (max-width: 900px) {
   .links .hide-sm { display: none; }
@@ -185,9 +142,8 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 66px); line-height: 1.04; letter-s
   .section { padding-block: 80px; }
   .head, .contact { grid-template-columns: minmax(0, 1fr); }
   .head { margin-bottom: 36px; }
-  .profile { display: none; }
-  .timeline { display: block; }
-  .cards { grid-template-columns: minmax(0, 1fr); }
+  .ch .org { font-size: 17px; }
+  .ch .stack { display: none; }
   .rows li { grid-template-columns: minmax(0, 1fr) auto; }
   .rows li .k { grid-column: 1 / -1; }
 }
@@ -227,21 +183,48 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 66px); line-height: 1.04; letter-s
     </div>
   </section>
 
-  <section class="section" id="experience">
-    <div class="head">
-      <h2>Experience</h2>
-      <p>Each stop is a role. The line climbs with what I took on there.</p>
+  <section class="climb" id="experience" aria-labelledby="xtitle">
+    <h2 class="sr-only" id="xtitle">Experience</h2>
+    <ol class="sr-only" id="xlist"></ol>
+    <div class="sticky">
+      <div class="copy">
+        <div class="chapters" id="xch" aria-hidden="true">
+          <div class="ch on">
+            <span class="mono kicker">Experience / Base</span>
+            <h3>Experience</h3>
+            <p class="lede">One pitch, one bolt per role, newest at the top. Each clip opens the next role.</p>
+          </div>
+        </div>
+        <ol class="steps" id="xsteps" aria-label="Experience bolts"></ol>
+        <div class="readout mono"><span>Height <b id="xh">0</b> m</span><span>Draws <b id="xd">0</b></span><span>Route <b>6b+</b></span></div>
+      </div>
+      <div class="scene-wrap">
+        <canvas id="crag" aria-hidden="true"></canvas>
+        <div class="hint mono" id="xhint">Scroll to climb</div>
+      </div>
     </div>
-    <div class="profile" id="profile"></div>
-    <div class="timeline" id="timeline"><div class="tl-track"></div><div class="tl-fill" id="tlFill"></div></div>
   </section>
 
-  <section class="section" id="work">
-    <div class="head">
-      <h2>Work</h2>
-      <p>Side projects, graded like routes: harder grade, harder problem. Both are live.</p>
+  <section class="ride" id="work" aria-labelledby="wtitle">
+    <h2 class="sr-only" id="wtitle">Work</h2>
+    <ul class="sr-only" id="wlist"></ul>
+    <div class="sticky">
+      <div class="copy">
+        <div class="chapters" id="wch" aria-hidden="true">
+          <div class="ch on">
+            <span class="mono kicker">Work / Road</span>
+            <h3>Work</h3>
+            <p class="lede">Side projects, graded like routes: harder grade, harder problem. Both are live.</p>
+          </div>
+        </div>
+        <ol class="steps" id="wsteps" aria-label="Work stops"></ol>
+        <div class="readout mono"><span>Dist <b id="wkm">0.0</b> km</span><span>Stop <b id="ws">0</b></span><span>Grade <b id="wg">–</b></span></div>
+      </div>
+      <div class="scene-wrap">
+        <canvas id="ride" aria-hidden="true"></canvas>
+        <div class="hint mono" id="whint">Scroll to ride</div>
+      </div>
     </div>
-    <div class="cards" id="cards"></div>
   </section>
 
   <section class="section" id="resume">
@@ -287,6 +270,7 @@ const SITE = {
   ],
   next: { label: 'Next', role: 'Your team?' },
   projects: [
+    // Each project gets a roadside sign in the Work ride, in this order
     { grade: '7a', meta: 'AI product · since 2025', name: 'Ask Ah Mah',
       blurb: 'A cooking chat that remembers what is in your kitchen and suggests what to make tonight, in the voice of a Singaporean grandma.',
       stack: 'Next.js 15 · Vercel AI SDK · Postgres + Prisma · better-auth · Jest, Playwright, LLM evals',
@@ -305,7 +289,7 @@ const SITE = {
 </script>
 
 <script>
-// ---- Page: rendering, theme, reveals, experience line ----
+// ---- Page: rendering, theme, sticky section chapters ----
 (function () {
   document.documentElement.classList.add('js');
   const $ = (s) => document.querySelector(s);
@@ -376,125 +360,67 @@ const SITE = {
   window.addEventListener('resize', updateHero);
   updateHero();
 
-  // Experience: desktop elevation profile
-  const W = 1200, H = 300, X0 = 40, XN = 1160;
-  const n = SITE.experience.length;
-  const pts = [[X0, 262]];
-  const stepX = (XN - X0) / (n + 1);
-  for (let i = 0; i < n; i++) pts.push([X0 + stepX * (i + 0.7), 232 - (i + 1) * (150 / n) + (i % 2 ? 14 : -6)]);
-  const nextPt = [XN, 42];
-  function curve(list) {
-    let d = 'M' + list[0][0] + ' ' + list[0][1];
-    for (let i = 1; i < list.length; i++) {
-      const [x0, y0] = list[i - 1], [x1, y1] = list[i], dx = (x1 - x0) / 2;
-      d += ' C' + (x0 + dx) + ' ' + y0 + ' ' + (x1 - dx) + ' ' + y1 + ' ' + x1 + ' ' + y1;
+  // Sticky 3D sections (crag, ride): each step of scroll travels for 80%, then rests.
+  // `at(p)` gives { seg, e (eased travel), idx (current chapter) }; the 3D scenes read the same function.
+  const stepper = (N) => (p) => {
+    const s = Math.min(Math.max(p, 0) * N, N - 1e-6), seg = Math.floor(s), u = s - seg, m = Math.min(u / 0.8, 1);
+    return { seg, e: m * m * (3 - 2 * m), idx: Math.min(seg + (u >= 0.8 ? 1 : 0), N - 1) };
+  };
+  const pad = (i) => (i < 10 ? '0' : '') + i;
+  function chapter(html) { const d = document.createElement('div'); d.className = 'ch'; d.innerHTML = html; return d; }
+  // Stepper buttons + chapter swap for one sticky section. readout(c, f) gets the step and overall travel 0..1.
+  function stepSection(sec, chs, stepsEl, items, readout) {
+    const N = items.length, at = stepper(N);
+    sec.style.height = (100 + N * 70) + 'vh';
+    items.forEach((s, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = '<button type="button" aria-label="' + esc(s.label) + '">' + esc(s.k) + (s.sk ? '<span class="sk"> ' + esc(s.sk) + '</span>' : '') + '</button>';
+      li.firstChild.addEventListener('click', () => {
+        const span = sec.offsetHeight - window.innerHeight;
+        window.scrollTo({ top: sec.offsetTop + (i ? (i - 0.1) / N : 0) * span, behavior: reduce.matches ? 'auto' : 'smooth' });
+      });
+      stepsEl.appendChild(li);
+    });
+    const els = Array.from(chs.children), btns = Array.from(stepsEl.querySelectorAll('button'));
+    let cur = -1;
+    function update() {
+      const r = sec.getBoundingClientRect();
+      const c = at(clamp(-r.top / Math.max(r.height - window.innerHeight, 1)));
+      readout(c, c.seg >= N - 1 ? 1 : (c.seg + c.e) / (N - 1));
+      if (c.idx === cur) return;
+      cur = c.idx;
+      els.forEach((el, j) => el.classList.toggle('on', j === cur));
+      btns.forEach((b, j) => {
+        b.classList.toggle('done', j <= cur);
+        b.classList.toggle('cur', j === cur);
+        if (j === cur) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+      });
     }
-    return d;
+    window.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+    window.addEventListener('resize', update);
+    update();
+    return at;
   }
-  const solidD = curve(pts);
-  const futureD = curve([pts[pts.length - 1], nextPt]);
-  const areaD = curve(pts.concat([nextPt])) + ' L' + XN + ' ' + H + ' L' + X0 + ' ' + H + ' Z';
-  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">';
-  svg += '<path d="' + areaD + '" fill="var(--fill)"></path>';
-  pts.slice(1).concat([nextPt]).forEach(([x, y]) => { svg += '<path d="M' + x + ' ' + y + ' L' + x + ' ' + H + '" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"></path>'; });
-  svg += '<path d="' + solidD + '" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round" opacity="0.4"></path>';
-  svg += '<path d="' + futureD + '" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round" opacity="0.55"></path>';
-  svg += '<path id="eline" d="' + solidD + '" fill="none" stroke="var(--accent-text)" stroke-width="3" stroke-linecap="round"></path>';
-  svg += '<circle cx="' + nextPt[0] + '" cy="' + nextPt[1] + '" r="6" fill="var(--bg)" stroke="var(--accent-text)" stroke-width="2" opacity="0.6"></circle>';
-  pts.slice(1).forEach(([x, y], i) => {
-    const last = i === n - 1;
-    svg += '<g class="wp" data-i="' + i + '">' +
-      (last ? '<circle class="wp-halo" cx="' + x + '" cy="' + y + '" r="15" fill="none" stroke="var(--accent-text)" stroke-width="1.5"></circle>' : '') +
-      '<circle class="wp-ring" cx="' + x + '" cy="' + y + '" r="8" fill="none" stroke="var(--accent-text)" stroke-width="2"></circle>' +
-      '<circle class="wp-fill" cx="' + x + '" cy="' + y + '" r="' + (last ? 8 : 6) + '" stroke="var(--accent-text)" stroke-width="3"></circle></g>';
-  });
-  svg += '<circle id="edot" cx="' + X0 + '" cy="' + pts[0][1] + '" r="5" fill="var(--ink)"></circle></svg>';
-  let stops = '<div class="stops">';
-  SITE.experience.forEach((e, i) => {
-    stops += '<div class="stop rv" data-i="' + i + '" style="left:' + (pts[i + 1][0] / W * 100) + '%">' +
-      '<span class="mono">' + esc(e.start) + ' – ' + esc(e.end) + '</span><span class="role">' + esc(e.role) + '</span><span class="org">' + esc(e.org) + '</span><span class="hi">' + esc(e.highlight) + '</span></div>';
-  });
-  stops += '<div class="stop next" style="left:calc(' + (nextPt[0] / W * 100) + '% - min(24%, 300px) + 24px); text-align: right; padding-left: 0"><span class="mono">' + esc(SITE.next.label) + '</span><span class="role">' + esc(SITE.next.role) + '</span></div></div>';
-  $('#profile').innerHTML = svg + stops;
 
-  // Experience: mobile timeline
-  const tl = $('#timeline');
-  SITE.experience.forEach((e) => {
-    const d = document.createElement('div');
-    d.className = 'tl-item';
-    d.innerHTML = '<span class="mono">' + esc(e.start) + ' – ' + esc(e.end) + '</span><span class="role">' + esc(e.role) + '</span><span class="org">' + esc(e.org) + '</span><span>' + esc(e.highlight) + '</span>';
-    tl.appendChild(d);
-  });
-  const nx = document.createElement('div');
-  nx.className = 'tl-item'; nx.style.opacity = '0.5';
-  nx.innerHTML = '<span class="mono">' + esc(SITE.next.label) + '</span><span class="role">' + esc(SITE.next.role) + '</span>';
-  tl.appendChild(nx);
+  // Experience: crag. Base, one bolt per role, then the anchor.
+  const xn = SITE.experience.length, xch = $('#xch');
+  $('#xlist').innerHTML = SITE.experience.map((e) => '<li>' + esc(e.role) + ', ' + esc(e.org) + ', ' + esc(e.start) + ' to ' + esc(e.end) + '. ' + esc(e.highlight) + '</li>').join('');
+  SITE.experience.forEach((e, i) => xch.appendChild(chapter('<span class="mono kicker">Bolt ' + pad(i + 1) + ' / ' + esc(e.start) + ' – ' + esc(e.end) + '</span><h3>' + esc(e.role) + '</h3><p class="org">' + esc(e.org) + '</p><p class="lede">' + esc(e.highlight) + '</p>')));
+  xch.appendChild(chapter('<span class="mono kicker">Anchor / ' + esc(SITE.next.label) + '</span><h3>' + esc(SITE.next.role) + '</h3><p class="lede">The next pitch is open. The resume has the full details.</p><a class="btn ghost" href="#resume" tabindex="-1">Resume</a>'));
+  const xh = $('#xh'), xd = $('#xd');
+  window.climbAt = stepSection($('#experience'), xch, $('#xsteps'),
+    [{ k: 'Base', label: 'Base' }].concat(SITE.experience.map((e, i) => ({ k: pad(i + 1), sk: e.org, label: 'Bolt ' + pad(i + 1) })), [{ k: 'Top', sk: SITE.next.role, label: 'Anchor' }]),
+    (c, f) => { xh.textContent = String(Math.round(f * 24)); xd.textContent = Math.min(c.idx, xn) + '/' + xn; });
 
-  const eline = $('#eline'), edot = $('#edot');
-  const eL = eline.getTotalLength();
-  eline.style.strokeDasharray = eL + ' ' + eL;
-  function nearestLen(path, x, y) {
-    const L = path.getTotalLength(); let best = 0, bd = Infinity;
-    for (let i = 0; i <= 300; i++) { const l = L * i / 300, p = path.getPointAtLength(l), d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = l; } }
-    return best;
-  }
-  const wpL = pts.slice(1).map(([x, y]) => nearestLen(eline, x, y));
-  const wps = Array.from(document.querySelectorAll('.wp'));
-  const stopEls = Array.from(document.querySelectorAll('.stop.rv'));
-  const tlItems = Array.from(tl.querySelectorAll('.tl-item'));
-  const tlFill = $('#tlFill');
-  const profile = $('#profile');
-
-  function updateExperience() {
-    const vh = window.innerHeight;
-    if (profile.offsetParent) {
-      const r = profile.getBoundingClientRect();
-      const e = reduce.matches ? 1 : clamp((vh * 0.8 - r.top) / (vh * 0.5));
-      const l = eL * e;
-      eline.style.strokeDashoffset = String(eL - l);
-      const p = eline.getPointAtLength(l);
-      edot.setAttribute('cx', p.x); edot.setAttribute('cy', p.y);
-      edot.style.opacity = e >= 1 ? '0' : '1';
-      wps.forEach((w, i) => { const on = l >= wpL[i] - 1; w.classList.toggle('on', on); stopEls[i].classList.toggle('in', on); });
-    } else {
-      const r = tl.getBoundingClientRect();
-      const fillPx = reduce.matches ? r.height : Math.max(0, Math.min(r.height, vh * 0.7 - r.top));
-      tlFill.style.transform = 'scaleY(' + (fillPx / Math.max(r.height, 1)) + ')';
-      tlItems.forEach((it) => it.classList.toggle('on', it.offsetTop + 6 <= fillPx));
-    }
-  }
-  window.addEventListener('scroll', () => requestAnimationFrame(updateExperience), { passive: true });
-  window.addEventListener('resize', updateExperience);
-  updateExperience();
-
-  // Work: topo route cards
-  function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function topo(seed) {
-    const r = rng(seed), cx = 150 + r() * 120, cy = 80 + r() * 50;
-    let s = '<g class="topo">';
-    for (let k = 1; k <= 6; k++) {
-      const rx = k * 34 + r() * 8, ry = k * 20 + r() * 6;
-      let d = '';
-      for (let a = 0; a <= 24; a++) {
-        const t = a / 24 * Math.PI * 2, w = 1 + Math.sin(t * 3 + seed) * 0.08 + Math.cos(t * 2 + k) * 0.06;
-        d += (a ? 'L' : 'M') + (cx + Math.cos(t) * rx * w).toFixed(1) + ' ' + (cy + Math.sin(t) * ry * w).toFixed(1);
-      }
-      s += '<path d="' + d + 'Z"></path>';
-    }
-    s += '</g>';
-    const sx = 30 + r() * 30, sy = 196;
-    const m1x = sx + 70 + r() * 40, m1y = 150 + r() * 20, m2x = cx - 40 + r() * 20, m2y = cy + 40;
-    s += '<path class="route" pathLength="1" d="M' + sx + ' ' + sy + ' C' + (sx + 40) + ' ' + (sy - 10) + ' ' + (m1x - 30) + ' ' + (m1y + 20) + ' ' + m1x + ' ' + m1y + ' S' + (m2x - 20) + ' ' + (m2y + 10) + ' ' + m2x + ' ' + m2y + ' S' + (cx - 10) + ' ' + (cy + 8) + ' ' + cx + ' ' + cy + '"></path>';
-    s += '<circle class="rp" cx="' + sx + '" cy="' + sy + '" r="4"></circle><circle cx="' + cx + '" cy="' + cy + '" r="5" fill="none" stroke="var(--accent-text)" stroke-width="2"></circle>';
-    return s;
-  }
-  $('#cards').style.setProperty('--n', Math.min(SITE.projects.length, 3));
-  $('#cards').innerHTML = SITE.projects.map((p, i) =>
-    '<a class="card rv" style="--i:' + i + '" href="' + esc(p.href) + '" target="_blank" rel="noopener"><svg viewBox="0 0 400 220" aria-hidden="true">' + topo(i * 17 + 5) + '</svg>' +
-    '<div class="body"><span class="mono meta"><span class="grade">' + esc(p.grade) + '</span><span>' + esc(p.meta || '') + '</span></span><h3>' + esc(p.name) + '</h3><p>' + esc(p.blurb) + '</p><span class="mono">' + esc(p.stack) + '</span>' +
-    (p.facts ? '<span class="mono facts">' + esc(p.facts) + '</span>' : '') +
-    '<span class="more">Visit site ↗</span></div></a>'
-  ).join('');
+  // Work: ride. The road, then one roadside sign per project.
+  const wn = SITE.projects.length, wch = $('#wch');
+  $('#wlist').innerHTML = SITE.projects.map((p) => '<li><a href="' + esc(p.href) + '" target="_blank" rel="noopener">' + esc(p.name) + '</a>, ' + esc(p.meta) + '. ' + esc(p.blurb) + ' ' + esc(p.stack) + '.</li>').join('');
+  SITE.projects.forEach((p, i) => wch.appendChild(chapter('<span class="mono kicker">Stop ' + pad(i + 1) + ' / ' + esc(p.meta) + '</span><h3>' + esc(p.name) + '</h3><p class="lede">' + esc(p.blurb) + '</p>' +
+    '<span class="mono stack">' + esc(p.stack) + (p.facts ? '<br>' + esc(p.facts) : '') + '</span><a class="btn" href="' + esc(p.href) + '" target="_blank" rel="noopener" tabindex="-1">Visit site ↗</a>')));
+  const wkm = $('#wkm'), ws = $('#ws'), wg = $('#wg');
+  window.rideAt = stepSection($('#work'), wch, $('#wsteps'),
+    [{ k: 'Road', label: 'Road' }].concat(SITE.projects.map((p, i) => ({ k: pad(i + 1), sk: p.name, label: p.name }))),
+    (c, f) => { wkm.textContent = (f * 6.4).toFixed(1); ws.textContent = c.idx + '/' + wn; wg.textContent = c.idx ? SITE.projects[c.idx - 1].grade : '–'; });
 
   // Contacts
   $('#contacts').innerHTML = SITE.contacts.map((c, i) =>
@@ -508,14 +434,74 @@ const SITE = {
     const done = () => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1600); };
     navigator.clipboard.writeText(el.textContent).then(done, () => { const s = window.getSelection(), r = document.createRange(); r.selectNodeContents(el); s.removeAllRanges(); s.addRange(r); });
   }));
-
-  // Reveals (cards)
-  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.2 });
-  document.querySelectorAll('.card.rv').forEach((el) => io.observe(el));
 })();
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ---- Shared clay helpers for the three.js scenes ----
+const CLAY = !window.THREE ? null : (function () {
+  const up = new THREE.Vector3(0, 1, 0);
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const mat = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.9, metalness: 0, flatShading: true }, o || {}));
+  function shadowy(m, cast, recv) { m.castShadow = cast !== false; m.receiveShadow = recv !== false; return m; }
+  // Cylinder stretched between two points (limbs, frame tubes)
+  function bar(r, m) {
+    const mesh = shadowy(new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 8), m), true, false);
+    mesh.put = (a, b) => {
+      const d = new THREE.Vector3().subVectors(b, a), L = d.length();
+      mesh.position.copy(a).addScaledVector(d, 0.5);
+      mesh.scale.set(1, Math.max(L, 1e-4), 1);
+      mesh.quaternion.setFromUnitVectors(up, d.multiplyScalar(1 / Math.max(L, 1e-4)));
+      return mesh;
+    };
+    return mesh;
+  }
+  // Two-bone limb from a to target b; the joint bends toward `bend`. Returns the reached end.
+  const lv = [V(0, 0, 0), V(0, 0, 0), V(0, 0, 0), V(0, 0, 0)];
+  function limb(upper, lower, a, b, L, bend) {
+    const d = lv[0].subVectors(b, a), dist = Math.min(d.length(), 2 * L - 1e-3);
+    const dn = lv[1].copy(d).normalize();
+    const perp = lv[2].copy(bend).addScaledVector(dn, -bend.dot(dn)).normalize();
+    const h = Math.sqrt(Math.max(L * L - (dist / 2) ** 2, 0));
+    const mid = lv[3].copy(a).addScaledVector(dn, dist / 2).addScaledVector(perp, h);
+    upper.put(a, mid);
+    const end = a.clone().addScaledVector(dn, dist);
+    lower.put(mid, end);
+    return end;
+  }
+  function isDark() {
+    const t = document.documentElement.getAttribute('data-theme');
+    return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function onTheme(fn) {
+    const run = () => fn(isDark());
+    run();
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', run);
+    new MutationObserver(run).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  }
+  // Same light rig as the hero: warm sun by day, cool moon by night
+  function lights(scene, shadowSize) {
+    const hemi = new THREE.HemisphereLight(0xf4f1ea, 0x6f7c6a, 0.55);
+    const sun = new THREE.DirectionalLight(0xfff0e0, 0.85);
+    if (shadowSize) {
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      Object.assign(sun.shadow.camera, { left: -shadowSize, right: shadowSize, top: shadowSize, bottom: -shadowSize, near: 1, far: 40 });
+      sun.shadow.bias = -0.0005; sun.shadow.radius = 3;
+    }
+    const amb = new THREE.AmbientLight(0xffffff, 0.06);
+    scene.add(hemi, sun, amb);
+    onTheme((dark) => {
+      if (dark) { hemi.color.set(0x9fb4c8); hemi.groundColor.set(0x2a3a33); hemi.intensity = 0.5; sun.color.set(0xc8d6ff); sun.intensity = 0.6; sun.position.set(-6, 10, 4); amb.intensity = 0.08; }
+      else { hemi.color.set(0xf4f1ea); hemi.groundColor.set(0x6f7c6a); hemi.intensity = 0.55; sun.color.set(0xfff0e0); sun.intensity = 0.85; sun.position.set(6, 11, 5); amb.intensity = 0.06; }
+    });
+    return { hemi, sun, amb };
+  }
+  return { V, rng, mat, shadowy, bar, limb, isDark, onTheme, lights };
+})();
+</script>
 <script>
 // ---- Hero: three.js touring diorama ----
 (function () {
@@ -552,9 +538,7 @@ const SITE = {
     cloud: 0xe8edef, bike: 0xc04a18, tire: 0x1d2320, bag: 0xc8955a, bagDark: 0x9c6f3e,
     shirt: 0x2f4a3a, skin: 0xd8ae8a, ink: 0x131c17,
   };
-  function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  const mat = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.9, metalness: 0, flatShading: true }, o || {}));
-  function shadowy(m, cast, recv) { m.castShadow = cast !== false; m.receiveShadow = recv !== false; return m; }
+  const { rng, mat, shadowy } = CLAY;
 
   // Base slab
   const R = 5.8;
@@ -1060,6 +1044,747 @@ const SITE = {
   new IntersectionObserver((es) => {
     visible = es[0].isIntersecting;
     if (visible && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  }).observe(wrap);
+  raf = requestAnimationFrame(frame);
+})();
+</script>
+<script>
+// ---- Experience: three.js sport crag. The climber clips one bolt per role; belayer at the base ----
+(function () {
+  const canvas = document.getElementById('crag');
+  if (!canvas || !CLAY || !window.climbAt) return;
+  const wrap = canvas.parentElement, stage = document.getElementById('experience');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { return; }
+  const { V, rng, mat, shadowy, bar, limb, lights } = CLAY;
+  const small = window.matchMedia('(max-width: 900px)').matches;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
+  renderer.shadowMap.enabled = !small;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  const world = new THREE.Group();
+  scene.add(world);
+  lights(scene, 6);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  const C = {
+    grass: 0x8ea67c, grass2: 0x7d9a6d, soil: 0x8a6a4e, soil2: 0x6f5540,
+    rock: 0xaab0a6, rockLow: 0x6f766e, pine: 0x4a7654, pine2: 0x3b6446, trunk: 0x6b4d36,
+    rope: 0xc04a18, shirt: 0x2f4a3a, skin: 0xd8ae8a, ink: 0x131c17, pants: 0x2a332e,
+    tan: 0xc8955a, tanDark: 0x9c6f3e, metal: 0xc9cfd2, sling: 0x2b312d,
+  };
+
+  // Base: a small floating meadow, same build as the hero island
+  const R = 3.0;
+  const lawn = shadowy(new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.4, 56), mat(C.grass, { flatShading: false })), false, true);
+  lawn.position.y = -0.2;
+  const soil = new THREE.Mesh(new THREE.CylinderGeometry(R - 0.02, R - 0.3, 0.8, 56), mat(C.soil, { flatShading: false }));
+  soil.position.y = -0.8;
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(R - 0.31, R - 0.6, 0.35, 56), mat(C.soil2, { flatShading: false }));
+  band.position.y = -1.37;
+  world.add(lawn, soil, band);
+
+  // Rock pillar: ring by ring like the hero mountains, but near-vertical. The front (+z) face
+  // carries the route, so it gets less noise. Pale strata bands; a grass cap on top.
+  const H = 6.4, SEG = 12, RINGS = 8;
+  const grid = [];
+  const rock = (function () {
+    const rnd = rng(41);
+    for (let j = 0; j <= RINGS; j++) {
+      const t = j / RINGS, row = [];
+      const taper = 1 - 0.2 * t + 0.06 * Math.sin(t * 7), zc = 0.22 * Math.sin(t * Math.PI) - 0.15;
+      for (let i = 0; i < SEG; i++) {
+        const a = (i / SEG) * Math.PI * 2, front = Math.max(0, Math.sin(a));
+        const k = taper * (1 + (rnd() - 0.5) * (0.24 - 0.16 * front));
+        const y = j && j < RINGS ? t * H + (rnd() - 0.5) * 0.3 : t * H;
+        row.push([Math.cos(a) * 1.5 * k, y, Math.sin(a) * 1.05 * k + zc]);
+      }
+      grid.push(row);
+    }
+    const apex = [0.1, H + 0.14, 0.22 * Math.sin(Math.PI) - 0.15];
+    const lo = new THREE.Color(C.rockLow), hi = new THREE.Color(C.rock), grassC = new THREE.Color(C.grass2);
+    const pos = [], cols = [];
+    function face(A, B, Cc, i, cap) {
+      pos.push(...A, ...B, ...Cc);
+      const y = (A[1] + B[1] + Cc[1]) / 3;
+      let c;
+      if (cap) c = grassC.clone().offsetHSL(0, 0, (rnd() - 0.5) * 0.03);
+      else {
+        c = lo.clone().lerp(hi, Math.min(1, 0.3 + 0.7 * y / H));
+        c.offsetHSL(0, 0, (Math.floor(y / 0.7) % 2 ? 0.03 : 0) - (i % 4 === 1 ? 0.03 : 0) + (rnd() - 0.5) * 0.03);
+      }
+      cols.push(c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b);
+    }
+    for (let j = 0; j < RINGS; j++) {
+      for (let i = 0; i < SEG; i++) {
+        const k = (i + 1) % SEG, A = grid[j][i], B = grid[j][k], U = grid[j + 1][i], W = grid[j + 1][k];
+        face(A, U, B, i); face(B, U, W, i);
+      }
+    }
+    for (let i = 0; i < SEG; i++) face(grid[RINGS][i], apex, grid[RINGS][(i + 1) % SEG], i, true);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    g.computeVertexNormals();
+    const m = shadowy(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 })));
+    world.add(m);
+    return m;
+  })();
+
+  // Sample the front face along the route by casting rays at the rock
+  const routeX = (y) => 0.16 * Math.sin(y * 0.8 + 0.5);
+  const STEP = 0.05, surf = [];
+  (function sample() {
+    const ray = new THREE.Raycaster();
+    rock.material.side = THREE.DoubleSide;
+    rock.updateMatrixWorld(true);
+    for (let y = 0; y <= H - 0.1; y += STEP) {
+      ray.set(V(routeX(y), y, 8), V(0, 0, -1));
+      const h = ray.intersectObject(rock)[0];
+      surf.push(h ? { p: h.point.clone(), n: h.face.normal.clone() } : { p: V(routeX(y), y, 1), n: V(0, 0, 1) });
+    }
+    rock.material.side = THREE.FrontSide;
+  })();
+  const last = surf.length - 1;
+  // Smoothed copy for the climber, so the body glides instead of snapping facet to facet
+  const smooth = surf.map((s, i) => {
+    const n = V(0, 0, 0), p = V(0, 0, 0);
+    for (let k = -6; k <= 6; k++) { const q = surf[Math.min(Math.max(i + k, 0), last)]; n.add(q.n); p.add(q.p); }
+    n.normalize().lerp(V(0, 0, 1), 0.35); n.y *= 0.5; n.normalize();
+    p.multiplyScalar(1 / 13); p.x = s.p.x; p.y = s.p.y; p.z = Math.max(p.z, s.p.z);
+    return { p, n };
+  });
+  const rowAt = (y) => Math.min(Math.max(Math.round(y / STEP), 0), last);
+  function at(y, outP, outN) {
+    const f = Math.min(Math.max(y / STEP, 0), last - 0.001), i = Math.floor(f), u = f - i;
+    outP.lerpVectors(smooth[i].p, smooth[i + 1].p, u);
+    outN.lerpVectors(smooth[i].n, smooth[i + 1].n, u).normalize();
+  }
+
+  // Bolts: one per role, then a two-bolt anchor near the top
+  const roles = SITE.experience, n = roles.length;
+  const boltY = [];
+  for (let k = 0; k <= n; k++) boltY.push(1.2 + k * (H - 0.55 - 1.2) / n);
+  const metalM = mat(C.metal, { roughness: 0.4, metalness: 0.3, flatShading: false }), slingM = mat(C.sling, { flatShading: false });
+  const hangerG = new THREE.BoxGeometry(0.06, 0.1, 0.02), binerG = new THREE.TorusGeometry(0.032, 0.008, 6, 14), slingG = new THREE.BoxGeometry(0.03, 0.12, 0.012);
+  function biner(y, parent) { const b = new THREE.Mesh(binerG, metalM); b.scale.set(1, 1.4, 1); b.position.y = y; parent.add(b); return b; }
+  const tmp = V(0, 0, 0), tmp2 = V(0, 0, 0);
+  const bolts = boltY.map((y, k) => {
+    const anchor = k === n, s = surf[rowAt(y)], nn = smooth[rowAt(y)].n;
+    const g = new THREE.Group();
+    g.position.copy(s.p);
+    g.lookAt(tmp.copy(s.p).add(nn));
+    g.scale.setScalar(1.35);
+    (anchor ? [-0.1, 0.1] : [0]).forEach((x) => { const h = new THREE.Mesh(hangerG, metalM); h.position.set(x, 0, 0.01); g.add(h); });
+    if (anchor) {
+      // chains meet at a ring below the two hangers
+      [-1, 1].forEach((sx) => { const l = bar(0.006, metalM); l.castShadow = false; g.add(l.put(V(sx * 0.1, -0.03, 0.02), V(0, -0.15, 0.03))); });
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.008, 6, 14), metalM); ring.position.set(0, -0.17, 0.03); g.add(ring);
+    }
+    // Quickdraw: springs on when the climber clips this bolt
+    const qd = new THREE.Group();
+    qd.position.set(0, anchor ? -0.17 : -0.03, 0.03);
+    biner(-0.03, qd);
+    const sl = new THREE.Mesh(slingG, slingM); sl.position.y = -0.11; qd.add(sl);
+    biner(-0.19, qd);
+    qd.scale.setScalar(0.001); qd.visible = false;
+    g.add(qd);
+    world.add(g);
+    const el = document.createElement('div');
+    el.className = 'cp side';
+    el.innerHTML = anchor ? '<b>' + esc(SITE.next.label) + '</b> ' + esc(SITE.next.role) : '<b>' + (k < 9 ? '0' : '') + (k + 1) + '</b> ' + esc(roles[k].org);
+    wrap.appendChild(el);
+    return { g, qd, y, clip: y - 0.32, s: 0, v: 0, el, ropeAt: V(0, (anchor ? -0.17 : -0.03) - 0.19, 0.03), w: V(0, 0, 0) };
+  });
+
+  // Climber: same kit as the cyclist (green shirt, black helmet), facing the wall
+  const shirtM = mat(C.shirt, { flatShading: false }), skinM = mat(C.skin, { flatShading: false }), pantsM = mat(C.pants, { flatShading: false }), inkM = mat(C.ink, { flatShading: false });
+  function person(shirt, helmetC) {
+    const g = new THREE.Group(), body = new THREE.Group();
+    g.add(body);
+    body.scale.setScalar(1.3);
+    const head = shadowy(new THREE.Mesh(new THREE.SphereGeometry(0.062, 14, 10), skinM));
+    const helmet = shadowy(new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(helmetC, { flatShading: false })));
+    const torso = bar(0.06, shirt), pelvis = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.08, 0.09), pantsM));
+    body.add(head, helmet, torso, pelvis);
+    const arms = [1, -1].map((s) => { const a = { s, up: bar(0.022, shirt), lo: bar(0.018, skinM) }; body.add(a.up, a.lo); return a; });
+    const legs = [1, -1].map((s) => {
+      const l = { s, up: bar(0.032, pantsM), lo: bar(0.026, pantsM), shoe: shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.035, 0.09), inkM)) };
+      body.add(l.up, l.lo, l.shoe); return l;
+    });
+    return { g, body, head, helmet, torso, pelvis, arms, legs };
+  }
+  const climber = person(shirtM, C.ink);
+  const harness = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, 0.1), inkM)); harness.position.y = 0.03;
+  const chalk = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.05), mat(C.tan))); chalk.position.set(0, 0.02, 0.07);
+  climber.body.add(harness, chalk);
+  climber.pelvis.position.set(0, 0, 0);
+  climber.torso.put(V(0, 0, 0), V(0, 0.3, 0.03));
+  climber.head.position.set(0, 0.41, 0.045);
+  climber.helmet.position.set(0, 0.425, 0.05); climber.helmet.rotation.x = 0.4;
+  world.add(climber.g);
+  // One climbing cycle per ~half a metre of height: opposite hand and foot move together
+  function climbPose(phase) {
+    climber.body.position.x = 0.025 * Math.sin(phase);
+    climber.arms.forEach((a) => {
+      const ph = phase + (a.s > 0 ? 0 : Math.PI);
+      limb(a.up, a.lo, V(a.s * 0.08, 0.28, 0.02), V(a.s * 0.17, 0.47 + 0.09 * Math.sin(ph), -0.16), 0.17, V(a.s, -0.6, 0.5));
+    });
+    climber.legs.forEach((l) => {
+      const ph = phase + (l.s > 0 ? Math.PI : 0);
+      const end = limb(l.up, l.lo, V(l.s * 0.055, -0.02, 0), V(l.s * 0.15, -0.33 + 0.08 * Math.sin(ph), -0.15), 0.21, V(l.s, 0.3, 0.7));
+      l.shoe.position.copy(end).add(tmp2.set(0, -0.01, -0.02));
+    });
+  }
+
+  // Belayer at the base, side-on, looking up
+  const belayer = person(mat(C.tan, { flatShading: false }), 0xf5f7f8);
+  (function () {
+    const b = belayer;
+    b.pelvis.position.set(0, 0.44, 0);
+    b.torso.put(V(0, 0.44, 0), V(0, 0.74, 0.02));
+    b.head.position.set(0, 0.84, 0.03);
+    b.helmet.position.set(0, 0.855, 0.035); b.helmet.rotation.x = 0.55;
+    b.legs.forEach((l) => { const e = limb(l.up, l.lo, V(l.s * 0.055, 0.42, 0), V(l.s * 0.09, 0.02, l.s * 0.04), 0.21, V(0, 0, -1)); l.shoe.position.copy(e).add(tmp2.set(0, 0, -0.02)); });
+    limb(b.arms[0].up, b.arms[0].lo, V(0.08, 0.71, 0.02), V(0.05, 0.62, -0.2), 0.17, V(1, -1, 0));
+    limb(b.arms[1].up, b.arms[1].lo, V(-0.08, 0.71, 0.02), V(-0.07, 0.42, -0.08), 0.17, V(-1, -0.3, 0.5));
+    const dev = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.03), inkM)); dev.position.set(0, 0.47, -0.08);
+    b.body.add(dev);
+    b.g.position.set(routeX(0) + 1.35, 0, surf[0].p.z + 0.85);
+    b.g.rotation.y = 0.7;
+    world.add(b.g);
+    b.dev = dev;
+  })();
+
+  // Rope: rebuilt as a tube each frame from belay device, through clipped draws, to the harness
+  const ropeM = mat(C.rope, { roughness: 0.7, flatShading: false });
+  const rope = shadowy(new THREE.Mesh(new THREE.BufferGeometry(), ropeM), true, false);
+  world.add(rope);
+  function tube(pts, r) {
+    const path = new THREE.CurvePath();
+    for (let i = 0; i < pts.length - 1; i++) path.add(new THREE.LineCurve3(pts[i], pts[i + 1]));
+    return new THREE.TubeGeometry(path, 18 * (pts.length - 1), r, 5, false);
+  }
+  // Spare rope from the device to a coil on the ground
+  const devW = V(0, 0, 0);
+  world.updateMatrixWorld(true);
+  belayer.dev.localToWorld(devW.set(0, 0, 0));
+  const coilAt = V(belayer.g.position.x - 0.55, 0.03, belayer.g.position.z + 0.15);
+  world.add(new THREE.Mesh(tube([devW.clone(), V(devW.x - 0.1, 0.25, devW.z + 0.1), coilAt.clone().add(V(0.12, 0.03, 0))], 0.02), ropeM));
+  [0, 1, 2].forEach((i) => { const c = shadowy(new THREE.Mesh(new THREE.TorusGeometry(0.16 - i * 0.03, 0.022, 6, 24), ropeM)); c.rotation.x = Math.PI / 2; c.position.copy(coilAt).add(V(0, i * 0.04, 0)); world.add(c); });
+
+  // Scenery: a few pines and boulders, one pine on the summit
+  const coneA = new THREE.ConeGeometry(0.34, 0.56, 8), coneB = new THREE.ConeGeometry(0.27, 0.46, 8), coneC = new THREE.ConeGeometry(0.18, 0.38, 8);
+  const trunkG = new THREE.CylinderGeometry(0.05, 0.06, 0.26, 6), trunkM = mat(C.trunk), pineM = [mat(C.pine), mat(C.pine2)];
+  function pine(x, y, z, s, i) {
+    const t = new THREE.Group(), pm = pineM[i % 2];
+    [[trunkG, trunkM, 0.13], [coneA, pm, 0.48], [coneB, pm, 0.76], [coneC, pm, 1.02]].forEach(([g, m, h]) => { const c = shadowy(new THREE.Mesh(g, m)); c.position.y = h; t.add(c); });
+    t.scale.setScalar(s); t.position.set(x, y, z); t.rotation.y = i * 1.7;
+    world.add(t);
+  }
+  [[-2.2, -0.9, 1.1], [-1.75, -1.6, 0.85], [2.3, -0.7, 1.0], [-2.1, 1.3, 0.8]].forEach(([x, z, s], i) => pine(x, 0, z, s, i));
+  pine(-0.25, H - 0.02, -0.25, 0.6, 1);
+  (function () {
+    const g = new THREE.DodecahedronGeometry(0.2, 0), m = mat(0x9aa29b), rnd = rng(5);
+    [[2.0, 0.9], [-1.5, 2.0], [2.35, 0.55], [-2.5, 0.3]].forEach(([x, z]) => {
+      const r = shadowy(new THREE.Mesh(g, m));
+      r.position.set(x, 0.05, z); r.scale.set(1 + rnd(), 0.6 + rnd() * 0.5, 1 + rnd()); r.rotation.set(rnd(), rnd() * 6, rnd());
+      world.add(r);
+    });
+  })();
+
+  // Framing: same never-crop fit as the hero, over the island rim, pillar and summit pine
+  const fitPts = [];
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2;
+    fitPts.push(V(Math.cos(a) * R, 0.05, Math.sin(a) * R), V(Math.cos(a) * (R - 0.6), -1.55, Math.sin(a) * (R - 0.6)));
+  }
+  grid.forEach((row) => row.forEach((p) => fitPts.push(V(p[0], p[1], p[2]))));
+  fitPts.push(V(-0.25, H + 0.6, -0.25));
+  const fitV = V(0, 0, 0), look = V(0, 2.4, 0);
+  function fits(d) {
+    camera.position.set(0, look.y + d * 0.16, d); camera.lookAt(look); camera.updateMatrixWorld();
+    for (let i = 0; i < fitPts.length; i++) {
+      fitV.copy(fitPts[i]).applyMatrix4(world.matrixWorld).project(camera);
+      if (fitV.x < -0.96 || fitV.x > 0.96 || fitV.y < -0.96 || fitV.y > 0.94) return false;
+    }
+    return true;
+  }
+  function fitDist() {
+    let lo = 4, hi = 120;
+    for (let i = 0; i < 16; i++) { const m = (lo + hi) / 2; if (fits(m)) hi = m; else lo = m; }
+    return hi;
+  }
+  let dist = 0, vw = 1, vh = 1;
+  function resize() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    if (!w || !h) return;
+    vw = w; vh = h;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    dist = 0;
+    bolts.forEach((b) => { b.el._w = 0; });
+  }
+  new ResizeObserver(resize).observe(wrap);
+  resize();
+  // Side label: right of the bolt, kept inside the canvas
+  function placeSide(el, v) {
+    const w = el._w || (el._w = el.offsetWidth);
+    el.style.left = Math.min(Math.max((v.x + 1) / 2 * vw, 4), vw - w - 16).toFixed(1) + 'px';
+    el.style.top = ((1 - v.y) / 2 * vh).toFixed(1) + 'px';
+  }
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const hipPts = [0.55].concat(boltY.map((y) => y - 0.32));
+  let progress = 0, target = hipPts[0], hip = target, px = 0, py = 0, tx = 0, ty = 0, ropeKey = '';
+  function readScroll() {
+    const r = stage.getBoundingClientRect();
+    progress = Math.min(Math.max(-r.top / Math.max(r.height - window.innerHeight, 1), 0), 1);
+    const c = window.climbAt(progress);
+    target = c.seg >= hipPts.length - 1 ? hipPts[hipPts.length - 1] : hipPts[c.seg] + (hipPts[c.seg + 1] - hipPts[c.seg]) * c.e;
+  }
+  window.addEventListener('scroll', readScroll, { passive: true });
+  readScroll(); hip = target;
+  wrap.addEventListener('pointermove', (e) => {
+    const r = wrap.getBoundingClientRect();
+    tx = ((e.clientX - r.left) / r.width - 0.5) * 2; ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+  });
+  wrap.addEventListener('pointerleave', () => { tx = 0; ty = 0; });
+  const hint = document.getElementById('xhint');
+  const cp = V(0, 0, 0), cn = V(0, 0, 0), harnessW = V(0, 0, 0);
+
+  let visible = true, raf = 0, lastT = performance.now();
+  function frame(now) {
+    raf = 0;
+    const dt = Math.min((now - lastT) / 1000, 0.05); lastT = now;
+    const still = reduce.matches, time = now / 1000;
+    hip = still ? target : hip + (target - hip) * Math.min(1, dt * 6);
+    // Climber on the smoothed wall, body held off the rock
+    at(hip, cp, cn);
+    climber.g.position.copy(cp).addScaledVector(cn, 0.21);
+    climber.g.lookAt(tmp.copy(climber.g.position).add(cn));
+    climbPose(hip * Math.PI * 2 / 0.55);
+    const k = still ? 1 : Math.min(1, dt * 4);
+    px += (tx - px) * k; py += (ty - py) * k;
+    world.rotation.y = -0.35 + progress * 0.55 + px * 0.06;
+    world.rotation.x = py * 0.03;
+    world.position.y = still ? 0 : Math.sin(time * 0.7) * 0.05;
+    world.updateMatrixWorld(true);
+    // Camera leans a little toward the climber; the fit then keeps everything in frame
+    look.y += ((2.4 + (hip - 2.4) * 0.25) - look.y) * k;
+    const want = fitDist();
+    dist = dist ? Math.max(want, dist + (want - dist) * k) : want;
+    camera.position.set(0, look.y + dist * 0.16, dist);
+    camera.lookAt(look);
+    camera.updateMatrixWorld();
+    // Quickdraws spring on as they are clipped; only the latest keeps its label
+    let cur = -1;
+    bolts.forEach((b, i) => { if (hip >= b.clip - 0.005) cur = i; });
+    const pts = [belayer.dev.localToWorld(devW.set(0, 0, 0)).clone()];
+    bolts.forEach((b, i) => {
+      const want = i <= cur ? 1 : 0;
+      if (still) { b.s = want; b.v = 0; }
+      else { b.v += ((want - b.s) * 180 - b.v * 16) * dt; b.s += b.v * dt; }
+      b.qd.visible = b.s > 0.01;
+      b.qd.scale.setScalar(Math.max(b.s, 0.001));
+      if (i <= cur) pts.push(world.worldToLocal(b.g.localToWorld(b.w.copy(b.ropeAt))).clone());
+      b.el.classList.toggle('on', i === cur && b.s > 0.6);
+      if (i === cur) { b.g.localToWorld(tmp.set(0.32, 0, 0)).project(camera); placeSide(b.el, tmp); }
+    });
+    pts[0] = world.worldToLocal(pts[0]);
+    climber.g.updateMatrixWorld(true);
+    pts.push(world.worldToLocal(climber.body.localToWorld(harnessW.set(0, 0.03, -0.06))).clone());
+    const key = pts.map((p) => p.x.toFixed(3) + p.y.toFixed(3) + p.z.toFixed(3)).join();
+    if (key !== ropeKey) { ropeKey = key; rope.geometry.dispose(); rope.geometry = tube(pts, 0.02); }
+    hint.style.opacity = String(Math.max(0, 1 - progress * 8));
+    renderer.render(scene, camera);
+    if (visible) raf = requestAnimationFrame(frame);
+  }
+  new IntersectionObserver((es) => {
+    visible = es[0].isIntersecting;
+    if (visible && !raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); }
+  }).observe(wrap);
+  raf = requestAnimationFrame(frame);
+})();
+</script>
+<script>
+// ---- Work: first-person ride. Bars and bar bag in frame; one roadside sign per project; scroll pedals to each ----
+(function () {
+  const canvas = document.getElementById('ride');
+  if (!canvas || !CLAY || !window.rideAt || typeof SITE === 'undefined') return;
+  const wrap = canvas.parentElement, stage = document.getElementById('work');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { return; }
+  const { V, rng, mat, bar, lights, onTheme } = CLAY;
+  const small = window.matchMedia('(max-width: 900px)').matches;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(62, 1, 0.03, 900);
+  scene.add(camera);
+  lights(scene, 0);
+  // Fog fades into the page itself, so the far valley dissolves rather than ending
+  const fog = new THREE.Fog(0xeceeea, 60, 560);
+  scene.fog = fog;
+  const C = {
+    grass: 0x8ea67c, grass2: 0x7d9a6d, rock: 0x8497ad, rockLow: 0x5b6d83, snow: 0xf5f7f8,
+    road: 0xc9b38c, verge: 0x9e9270, pine: 0x4a7654, trunk: 0x6b4d36, wood: 0x8a6a4e, boulder: 0x9aa39a,
+    bike: 0xc04a18, ink: 0x131c17, grip: 0x2b312d, bag: 0xc8955a, bagDark: 0x9c6f3e, skin: 0xd8ae8a, shirt: 0x2f4a3a, post: 0xf1efe8,
+  };
+  const up = V(0, 1, 0), clamp = (x, a, b) => Math.min(Math.max(x, a), b);
+  const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+  // Road: a gentle dirt road winding away down the valley (-z)
+  const ctrl = [];
+  for (let k = -3; k <= 34; k++) ctrl.push(V(7 * Math.sin(k * 0.55) + 2.5 * Math.sin(k * 0.21 + 1), 0.4 * Math.sin(k * 0.45), -k * 10));
+  const curve = new THREE.CatmullRomCurve3(ctrl, false, 'centripetal');
+  const L = curve.getLength(), NS = Math.ceil(L), ds = L / NS, samp = curve.getSpacedPoints(NS);
+  const P = (s, out) => curve.getPointAt(clamp(s / L, 0, 1), out);
+  const T = (s, out) => curve.getTangentAt(clamp(s / L, 0, 1), out);
+  const sideOf = (s, out) => out.crossVectors(T(s, out), up).normalize();
+
+  function ribbon(half, lift, color) {
+    const pos = [], idx = [], r = V(0, 0, 0);
+    samp.forEach((p, i) => {
+      sideOf(i * ds, r);
+      pos.push(p.x - r.x * half, p.y + lift, p.z - r.z * half, p.x + r.x * half, p.y + lift, p.z + r.z * half);
+      if (i) { const a = 2 * i - 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    scene.add(new THREE.Mesh(g, mat(color, { flatShading: false })));
+  }
+  ribbon(1.9, 0.0, C.verge);
+  ribbon(1.3, 0.025, C.road);
+
+  // Terrain: flat beside the road, rising into valley walls; nearest road sample found by z
+  function near(x, z) {
+    let lo = 0, hi = NS;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (samp[m].z > z) lo = m + 1; else hi = m; }
+    let best = Infinity, bi = 0;
+    for (let i = Math.max(lo - 60, 0); i <= Math.min(lo + 60, NS); i++) {
+      const dx = samp[i].x - x, dz = samp[i].z - z, d = dx * dx + dz * dz;
+      if (d < best) { best = d; bi = i; }
+    }
+    return { d: Math.sqrt(best), y: samp[bi].y };
+  }
+  function ground(x, z) {
+    const n = near(x, z);
+    const hills = 2.6 * Math.sin(x * 0.045 + 1.3) * Math.sin(z * 0.037 + 0.4) + 1.3 * Math.sin(x * 0.11 + z * 0.07) + 0.6 * Math.sin(x * 0.23 - z * 0.19);
+    return { y: n.y - 0.08 + smooth(3.5, 18, n.d) * (hills + 1.8 + 0.15 * n.d), d: n.d, base: n.y };
+  }
+  (function terrain() {
+    const CELL = small ? 3.4 : 2.5, X0 = -170, X1 = 170, Z0 = 60, Z1 = -430;
+    const nx = Math.round((X1 - X0) / CELL), nz = Math.round((Z0 - Z1) / CELL), rnd = rng(7);
+    const vx = [], vy = [], vz = [], vb = [];
+    for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
+      const x = X0 + i * (X1 - X0) / nx, z = Z0 - j * (Z0 - Z1) / nz, g = ground(x, z);
+      vx.push(x); vz.push(z); vb.push(g.base);
+      vy.push(g.y + (rnd() - 0.5) * 0.7 * smooth(4, 12, g.d));
+    }
+    const pos = new Float32Array(nx * nz * 18), col = new Float32Array(nx * nz * 18);
+    const g1 = new THREE.Color(C.grass), g2 = new THREE.Color(C.grass2), rock = new THREE.Color(C.rockLow), c = new THREE.Color();
+    let o = 0;
+    function face(a, b, d) {
+      [a, b, d].forEach((v) => { pos[o] = vx[v]; pos[o + 1] = vy[v]; pos[o + 2] = vz[v]; o += 3; });
+      const h = (vy[a] + vy[b] + vy[d]) / 3 - vb[a];
+      c.copy(rnd() < 0.5 ? g1 : g2).lerp(rock, smooth(9, 26, h) * 0.75).offsetHSL(0, 0, (rnd() - 0.5) * 0.035);
+      for (let k = o - 9; k < o; k += 3) { col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; }
+    }
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const a = j * (nx + 1) + i, b = a + 1, d = a + nx + 1, e = d + 1;
+      face(a, b, d); face(b, e, d);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.computeVertexNormals();
+    scene.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 })));
+  })();
+
+  // Distant snow massifs closing the valley, built like the hero mountains
+  const cSnow = new THREE.Color(C.snow), cRock = new THREE.Color(C.rock), cRockLo = new THREE.Color(C.rockLow);
+  function mountain(m) {
+    const rnd = rng(m.s), SEG = 13, RINGS = 5;
+    const s1 = rnd() * 6, s2 = rnd() * 6, lean = (rnd() - 0.5) * 0.3;
+    const ridge = (a, t) => 0.2 * Math.cos(3 * a + s1 + t * 0.6) + 0.06 * Math.cos(5 * a + s2);
+    const grid = [];
+    for (let j = 0; j < RINGS; j++) {
+      const t = j / RINGS, row = [];
+      for (let i = 0; i < SEG; i++) {
+        const a = (i / SEG) * Math.PI * 2;
+        const rr = m.r * Math.pow(1 - t, 0.95) * (1 + ridge(a, t) + (j ? (rnd() - 0.5) * 0.05 : 0));
+        row.push([Math.cos(a) * rr + lean * m.r * t, t * m.h, Math.sin(a) * rr]);
+      }
+      grid.push(row);
+    }
+    const apex = [lean * m.r, m.h, 0], pos = [], cols = [];
+    function face(A, B, Cc, i) {
+      pos.push(...A, ...B, ...Cc);
+      const t = (A[1] + B[1] + Cc[1]) / 3 / m.h, a = ((i + 0.5) / SEG) * Math.PI * 2;
+      const line = m.snow + 0.07 * Math.sin(3 * a + s1) - (i % 2 ? 0.13 : 0);
+      const c = t > line ? cSnow.clone().offsetHSL(0, 0, (rnd() - 0.5) * 0.02) : cRockLo.clone().lerp(cRock, Math.min(1, t / Math.max(line, 0.01))).offsetHSL(0, 0, (rnd() - 0.5) * 0.04);
+      cols.push(c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b);
+    }
+    for (let j = 0; j < RINGS; j++) for (let i = 0; i < SEG; i++) {
+      const k = (i + 1) % SEG, A = grid[j][i], B = grid[j][k];
+      if (j === RINGS - 1) { face(A, apex, B, i); continue; }
+      face(A, grid[j + 1][i], B, i); face(B, grid[j + 1][i], grid[j + 1][k], i);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    g.computeVertexNormals();
+    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 }));
+    mesh.position.set(m.x, ground(m.x, m.z).y - 4, m.z);
+    mesh.rotation.y = m.ry || 0;
+    scene.add(mesh);
+  }
+  [
+    { x: -40, z: -400, r: 75, h: 105, snow: 0.5, s: 3 },
+    { x: 55, z: -440, r: 85, h: 130, snow: 0.45, s: 8, ry: 1 },
+    { x: 150, z: -370, r: 65, h: 85, snow: 0.55, s: 12 },
+    { x: -150, z: -350, r: 60, h: 80, snow: 0.55, s: 19, ry: 2 },
+    { x: -105, z: -250, r: 40, h: 48, snow: 0.62, s: 27 },
+    { x: 115, z: -200, r: 38, h: 44, snow: 0.64, s: 31, ry: 0.5 },
+  ].forEach(mountain);
+
+  // Instanced props: one draw call per kind
+  function merged(parts) {
+    const pos = [], col = [];
+    parts.forEach(([geo, y, color]) => {
+      const n = geo.toNonIndexed(), cc = new THREE.Color(color);
+      n.translate(0, y, 0);
+      pos.push(...n.attributes.position.array);
+      for (let k = 0; k < n.attributes.position.count; k++) col.push(cc.r, cc.g, cc.b);
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.computeVertexNormals();
+    return g;
+  }
+  function instanced(geo, list) {
+    const m = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 }), list.length);
+    m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(list.length * 3), 3);
+    const M = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), tint = new THREE.Color();
+    list.forEach((it, i) => {
+      q.setFromEuler(e.set(it.rx || 0, it.ry || 0, it.rz || 0));
+      M.compose(it.p, q, it.sc);
+      m.setMatrixAt(i, M);
+      m.setColorAt(i, tint.setScalar(it.tint || 1));
+    });
+    scene.add(m);
+    return m;
+  }
+
+  const projects = SITE.projects, S0 = 32;
+  const signS = projects.map((_, i) => S0 + 30 + i * 36);
+  const stopS = [S0].concat(signS.map((s) => s - 8));
+  const pv = V(0, 0, 0), rv = V(0, 0, 0);
+
+  // Pines in loose clumps, kept off the road and out of the line of sight to each sign
+  (function pines() {
+    const geo = merged([
+      [new THREE.CylinderGeometry(0.05, 0.06, 0.26, 6), 0.13, C.trunk],
+      [new THREE.ConeGeometry(0.34, 0.56, 8), 0.48, C.pine],
+      [new THREE.ConeGeometry(0.27, 0.46, 8), 0.76, C.pine],
+      [new THREE.ConeGeometry(0.18, 0.38, 8), 1.02, C.pine],
+    ]);
+    const rnd = rng(23), list = [];
+    for (let n = 0; n < 34; n++) {
+      const s = S0 - 6 + rnd() * (L - S0), side = rnd() < 0.5 ? -1 : 1, off = 6 + Math.pow(rnd(), 1.5) * 70;
+      const k = 2 + Math.floor(rnd() * 4);
+      for (let t = 0; t < k; t++) {
+        P(s, pv); sideOf(s, rv);
+        const x = pv.x + rv.x * side * off + (rnd() - 0.5) * 7, z = pv.z + rv.z * side * off + (rnd() - 0.5) * 7;
+        const g = ground(x, z);
+        if (g.d < 4.6) continue;
+        if (signS.some((ss) => s > ss - 18 && s < ss + 4 && side > 0 && off < 16)) continue;
+        const sc = 4.2 + rnd() * 2.8;
+        list.push({ p: V(x, g.y - 0.15, z), sc: V(sc, sc * (0.9 + rnd() * 0.3), sc), ry: rnd() * 6, tint: 0.82 + rnd() * 0.2 });
+      }
+    }
+    instanced(geo, list);
+  })();
+
+  // Boulders scattered near the road
+  (function boulders() {
+    const geo = merged([[new THREE.IcosahedronGeometry(1, 0), 0, C.boulder]]);
+    const rnd = rng(51), list = [];
+    for (let n = 0; n < 46; n++) {
+      const s = S0 - 6 + rnd() * (L - S0), side = rnd() < 0.5 ? -1 : 1, off = 3.4 + rnd() * 22;
+      if (signS.some((ss) => s > ss - 14 && s < ss + 3 && side > 0 && off < 9)) continue;
+      P(s, pv); sideOf(s, rv);
+      const x = pv.x + rv.x * side * off, z = pv.z + rv.z * side * off, g = ground(x, z), sc = (0.25 + Math.pow(rnd(), 2) * 1.3) * Math.min(1, off / 10);
+      list.push({ p: V(x, g.y, z), sc: V(sc * (1 + rnd() * 0.5), sc * 0.6, sc), rx: rnd(), ry: rnd() * 6, tint: 0.85 + rnd() * 0.2 });
+    }
+    instanced(geo, list);
+  })();
+
+  // Km posts on the left verge: white with a rust cap
+  (function posts() {
+    const geo = merged([[new THREE.BoxGeometry(0.11, 0.62, 0.11), 0.31, C.post], [new THREE.BoxGeometry(0.13, 0.12, 0.13), 0.66, C.bike]]);
+    const list = [];
+    for (let s = S0 - 4; s < L - 4; s += 12) {
+      P(s, pv); sideOf(s, rv);
+      const t = T(s, V(0, 0, 0));
+      list.push({ p: V(pv.x - rv.x * 2.1, pv.y - 0.05, pv.z - rv.z * 2.1), sc: V(1, 1, 1), ry: Math.atan2(t.x, t.z) });
+    }
+    instanced(geo, list);
+  })();
+
+  // Signs: plywood board on two posts, angled toward the rider; project name painted on
+  const pad = (i) => (i < 10 ? '0' : '') + i;
+  const faces = [];
+  function signTex(p, i) {
+    const cv = document.createElement('canvas');
+    cv.width = 1024; cv.height = 591;
+    const tex = new THREE.CanvasTexture(cv), x = cv.getContext('2d'), W = 1024, H = 591, m = 72;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    let host = p.href;
+    try { host = new URL(p.href).host; } catch (e) {}
+    const mono = (w, px) => w + ' ' + px + 'px "Geist Mono", ui-monospace, Menlo, monospace';
+    function draw() {
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      x.fillStyle = '#f1efe8'; x.fillRect(0, 0, W, H);
+      x.strokeStyle = '#131c17'; x.lineWidth = 8; x.strokeRect(26, 26, W - 52, H - 52);
+      x.fillStyle = '#46524a'; x.font = mono(500, 36); x.fillText('STOP ' + pad(i + 1), m, 122);
+      x.textAlign = 'right'; x.fillStyle = '#c04a18'; x.font = mono(600, 64); x.fillText(p.grade, W - m, 128);
+      x.fillStyle = '#131c17'; x.fillRect(m, 160, W - 2 * m, 4);
+      x.textAlign = 'left';
+      let size = 132;
+      do { x.font = '600 ' + size + 'px Geist, system-ui, sans-serif'; size -= 4; } while (x.measureText(p.name).width > W - 2 * m && size > 40);
+      x.fillText(p.name, m - 4, 318);
+      x.fillStyle = '#46524a'; x.font = mono(400, 36); x.fillText(p.meta || '', m, 394);
+      x.fillStyle = '#c04a18'; x.font = mono(500, 40); x.fillText('→ ' + host, m, H - 80);
+      tex.needsUpdate = true;
+    }
+    draw();
+    if (document.fonts) Promise.all([document.fonts.load('600 100px Geist'), document.fonts.load('500 36px "Geist Mono"')]).then(draw, () => {});
+    return tex;
+  }
+  const signAt = projects.map((p, i) => {
+    const s = signS[i], g = new THREE.Group(), pt = P(s, V(0, 0, 0)), r = sideOf(s, V(0, 0, 0)), t = T(s, V(0, 0, 0));
+    g.position.copy(pt).addScaledVector(r, 3.0);
+    g.position.y = pt.y - 0.05;
+    const face = t.negate().addScaledVector(r, -0.45); face.y = 0;
+    g.lookAt(g.position.clone().add(face.normalize()));
+    const tex = signTex(p, i);
+    const front = new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.1, roughness: 0.85 });
+    faces.push(front);
+    const wood = mat(C.wood), post = mat(C.trunk);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.5, 0.08), [wood, wood, wood, wood, front, wood]);
+    board.position.y = 1.85;
+    g.add(board);
+    [-0.95, 0.95].forEach((px) => g.add(bar(0.06, post).put(V(px, -0.4, -0.08), V(px, 2.5, -0.08))));
+    scene.add(g);
+    return g.localToWorld(V(0, 1.85, 0));
+  });
+  onTheme((dark) => {
+    faces.forEach((f) => { f.emissiveIntensity = dark ? 0.42 : 0.1; });
+    // Read the page background after the theme's CSS has applied
+    const set = () => fog.color.setStyle(getComputedStyle(document.body).backgroundColor);
+    requestAnimationFrame(set); setTimeout(set, 400);
+  });
+
+  // Cockpit: bars, hands and bar bag, carried by the camera
+  const cockpit = new THREE.Group();
+  camera.add(cockpit);
+  (function () {
+    const ink = mat(C.ink), grip = mat(C.grip), rust = mat(C.bike), skin = mat(C.skin), shirt = mat(C.shirt);
+    cockpit.add(bar(0.014, ink).put(V(-0.21, -0.25, -0.56), V(0.21, -0.25, -0.56)));
+    cockpit.add(bar(0.018, ink).put(V(0, -0.31, -0.49), V(0, -0.25, -0.56)));
+    cockpit.add(bar(0.026, rust).put(V(0, -0.31, -0.49), V(0, -0.52, -0.57)));
+    cockpit.add(bar(0.022, rust).put(V(0, -0.34, -0.48), V(0, -0.52, -0.12)));
+    [-1, 1].forEach((sx) => {
+      cockpit.add(bar(0.018, grip).put(V(0.2 * sx, -0.25, -0.56), V(0.33 * sx, -0.245, -0.5)));
+      // Gloved fist wrapped round the grip
+      const hand = new THREE.Mesh(new THREE.DodecahedronGeometry(0.038, 0), grip);
+      hand.scale.set(1.15, 0.8, 1.25);
+      hand.position.set(0.275 * sx, -0.236, -0.525); hand.rotation.y = 0.42 * sx;
+      cockpit.add(hand);
+      cockpit.add(bar(0.024, skin).put(V(0.28 * sx, -0.245, -0.5), V(0.4 * sx, -0.4, -0.24)));
+      cockpit.add(bar(0.042, shirt).put(V(0.4 * sx, -0.4, -0.24), V(0.5 * sx, -0.56, -0.02)));
+    });
+    const bag = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.17, 0.15), mat(C.bag));
+    bag.position.set(0, -0.365, -0.67);
+    const flap = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.06, 0.16), mat(C.bagDark));
+    flap.position.set(0, -0.29, -0.67);
+    const strap = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.155), mat(C.bagDark));
+    strap.position.set(0, -0.33, -0.67);
+    cockpit.add(bag, flap, strap);
+  })();
+
+  function resize() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    // Narrow canvases pull the bars in so the grips stay in frame
+    cockpit.scale.x = 0.7 * clamp(w / h, 0.75, 1.15);
+  }
+  new ResizeObserver(resize).observe(wrap);
+  resize();
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let progress = 0, target = stopS[0], s = target, spd = 0, phase = 0, roll = 0, px = 0, py = 0, tx = 0, ty = 0;
+  function readScroll() {
+    const r = stage.getBoundingClientRect(), n = stopS.length;
+    progress = clamp(-r.top / Math.max(r.height - window.innerHeight, 1), 0, 1);
+    const c = window.rideAt(progress);
+    target = c.seg >= n - 1 ? stopS[n - 1] : stopS[c.seg] + (stopS[c.seg + 1] - stopS[c.seg]) * c.e;
+  }
+  window.addEventListener('scroll', readScroll, { passive: true });
+  readScroll(); s = target;
+  wrap.addEventListener('pointermove', (e) => {
+    const r = wrap.getBoundingClientRect();
+    tx = ((e.clientX - r.left) / r.width - 0.5) * 2; ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+  });
+  wrap.addEventListener('pointerleave', () => { tx = 0; ty = 0; });
+  const hint = document.getElementById('whint');
+  const cp = V(0, 0, 0), ct = V(0, 0, 0), ct2 = V(0, 0, 0), cr = V(0, 0, 0), look = V(0, 0, 0);
+
+  let visible = true, raf = 0, lastT = performance.now();
+  function frame(now) {
+    raf = 0;
+    const dt = Math.min((now - lastT) / 1000, 0.05); lastT = now;
+    const still = reduce.matches, prev = s;
+    s = still ? target : s + (target - s) * Math.min(1, dt * 2.2);
+    spd += ((dt ? Math.abs(s - prev) / dt : 0) - spd) * Math.min(1, dt * 4);
+    const go = still ? 0 : Math.min(spd / 5, 1);
+    phase += spd * dt * 1.3;
+    const k = still ? 1 : Math.min(1, dt * 4);
+    px += (tx - px) * k; py += (ty - py) * k;
+    // Eye on the right of the road; a little bob with each pedal stroke
+    P(s, cp); T(s, ct); cr.crossVectors(ct, up).normalize();
+    camera.position.copy(cp).addScaledVector(cr, 0.35);
+    camera.position.y += 1.35 + Math.abs(Math.sin(phase)) * 0.03 * go;
+    // Look down the road, turning toward a sign as it comes up
+    P(s + 9, look); look.y += 0.6;
+    let w = 0, si = -1;
+    signS.forEach((ss, i) => { const ww = 1 - smooth(0, 12, Math.abs(s - (ss - 8))); if (ww > w) { w = ww; si = i; } });
+    if (si >= 0) look.lerp(signAt[si], w * 0.5);
+    look.addScaledVector(cr, px * 1.1); look.y -= py * 0.5;
+    camera.lookAt(look);
+    // Lean into bends
+    T(s + 6, ct2);
+    const turn = ct.z * ct2.x - ct.x * ct2.z;
+    roll += (clamp(turn * 2.5, -0.07, 0.07) * go - roll) * k;
+    camera.rotateZ(roll);
+    cockpit.rotation.z = Math.sin(phase) * 0.018 * go;
+    cockpit.position.y = -Math.abs(Math.cos(phase)) * 0.006 * go;
+    hint.style.opacity = String(Math.max(0, 1 - progress * 8));
+    renderer.render(scene, camera);
+    if (visible) raf = requestAnimationFrame(frame);
+  }
+  new IntersectionObserver((es) => {
+    visible = es[0].isIntersecting;
+    if (visible && !raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); }
   }).observe(wrap);
   raf = requestAnimationFrame(frame);
 })();
