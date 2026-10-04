@@ -222,6 +222,7 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
     <div class="slot" id="slot" aria-hidden="true"></div>
     <footer class="foot mono">
       <span>© <span id="yr"></span> Alan Tay</span>
+      <span class="credits"><a href="https://poly.pizza/m/b6USSQA731J">Bicycle</a> by Poly by Google, <a href="https://poly.pizza/m/3nj59_uuCbM">Camping Asset Collection</a> by Alex Safayan, CC-BY</span>
       <a href="#top">Back to trailhead ↑</a>
     </footer>
   </section>
@@ -591,6 +592,8 @@ window.FX = {
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script>
 // ---- Shared clay helpers for the three.js scenes ----
 const CLAY = !window.THREE ? null : (function () {
@@ -652,7 +655,86 @@ const CLAY = !window.THREE ? null : (function () {
     });
     return { hemi, sun, amb };
   }
-  return { V, rng, mat, shadowy, bar, limb, isDark, onTheme, lights };
+  // Low-poly models from models/ (credits in models/CREDITS.md). Loaded once and shared.
+  // Resolves null on any failure (offline, file://), so each scene keeps its built stand-in.
+  // Files are meshopt-compressed (gltf-transform prune + meshopt), so load the decoder first.
+  const glbs = {};
+  let loader;
+  function model(name) {
+    if (!THREE.GLTFLoader) return Promise.resolve(null);
+    loader = loader || import('https://cdn.jsdelivr.net/npm/meshoptimizer@1.3.0/meshopt_decoder.mjs')
+      .then(({ MeshoptDecoder: d }) => d.ready.then(() => new THREE.GLTFLoader().setMeshoptDecoder(d)), () => new THREE.GLTFLoader());
+    return glbs[name] || (glbs[name] = loader.then((ld) => new Promise((done) => {
+      ld.load('models/' + name + '.glb', (g) => {
+        g.scene.traverse((o) => {
+          if (!o.isMesh) return;
+          shadowy(o, true, false);
+          if (o.isSkinnedMesh) o.frustumCulled = false;
+          const m = o.material;
+          if (m.userData.clay) return;
+          m.userData.clay = true;
+          // glTF colours are linear; these scenes render without colour management, so convert back
+          m.color.convertLinearToSRGB();
+          if (m.map) m.map.encoding = THREE.LinearEncoding;
+          m.roughness = 0.9; m.metalness = 0;
+        });
+        done(g);
+      }, undefined, () => done(null));
+    })));
+  }
+  // Repaint a model in the site palette, by glTF material name: hex, or { glow: hex } for embers
+  function recolor(root, map, flat) {
+    root.traverse((o) => {
+      if (!o.isMesh || !(o.material.name in map)) return;
+      const c = map[o.material.name], m = o.material = o.material.clone();
+      m.color.setHex(c.glow || c);
+      if (c.glow) { m.emissive.setHex(c.glow); m.emissiveIntensity = 0.9; }
+      if (flat) m.flatShading = true;
+    });
+    return root;
+  }
+  // Pose a skinned model from code: two-bone IK in world space, starting each frame from the rest pose
+  function rig(root) {
+    const b = {}, rest = [];
+    root.traverse((o) => { if (o.isBone) { b[o.name] = o; rest.push([o, o.quaternion.clone(), o.position.clone()]); } });
+    root.updateWorldMatrix(true, true);
+    const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), a0 = V(0, 0, 0), a1 = V(0, 0, 0), a2 = V(0, 0, 0);
+    const A = V(0, 0, 0), B = V(0, 0, 0), K = V(0, 0, 0), D = V(0, 0, 0), P = V(0, 0, 0), T = V(0, 0, 0);
+    function reset() { rest.forEach(([o, q, x]) => { o.quaternion.copy(q); o.position.copy(x); }); root.updateWorldMatrix(true, true); }
+    // Turn `bone` so its bone-local point `tip` heads for world point `to`
+    function aim(bone, tip, to) {
+      bone.getWorldPosition(a0); bone.localToWorld(a1.copy(tip));
+      qa.setFromUnitVectors(a1.sub(a0).normalize(), a2.copy(to).sub(a0).normalize());
+      bone.getWorldQuaternion(qb).premultiply(qa);
+      bone.parent.getWorldQuaternion(qa).invert();
+      bone.quaternion.copy(qa.multiply(qb));
+      bone.updateWorldMatrix(false, true);
+    }
+    // upper → lower → tip (lower-local) reaches for world `to`; the joint bends toward world direction `pole`
+    function reach(upper, lower, tip, to, pole) {
+      upper.getWorldPosition(A); lower.getWorldPosition(B); lower.localToWorld(K.copy(tip));
+      const L1 = A.distanceTo(B), L2 = B.distanceTo(K);
+      D.subVectors(to, A);
+      const dist = Math.min(Math.max(D.length(), Math.abs(L1 - L2) + 1e-4), L1 + L2 - 1e-4);
+      D.normalize();
+      const s = (L1 * L1 - L2 * L2 + dist * dist) / (2 * dist), h = Math.sqrt(Math.max(L1 * L1 - s * s, 0));
+      P.copy(pole).addScaledVector(D, -pole.dot(D)).normalize();
+      K.copy(A).addScaledVector(D, s).addScaledVector(P, h);
+      T.copy(A).addScaledVector(D, dist);
+      aim(upper, lower.position, K);
+      aim(lower, tip, T);
+      return T;
+    }
+    // Move a bone's head to a world point
+    function put(bone, to) {
+      bone.position.copy(bone.parent.worldToLocal(a0.copy(to)));
+      bone.updateWorldMatrix(false, true);
+    }
+    // A bone's world position, seen from another bone (e.g. ankle relative to shin)
+    const tip = (from, bone) => from.worldToLocal(bone.getWorldPosition(V(0, 0, 0)));
+    return { b, reset, aim, reach, put, tip };
+  }
+  return { V, rng, mat, shadowy, bar, limb, isDark, onTheme, lights, model, recolor, rig };
 })();
 </script>
 <script>
@@ -690,7 +772,7 @@ const CLAY = !window.THREE ? null : (function () {
     cloud: 0xe8edef, bike: 0xc04a18, tire: 0x1d2320, bag: 0xc8955a, bagDark: 0x9c6f3e,
     shirt: 0x2f4a3a, skin: 0xd8ae8a, ink: 0x131c17,
   };
-  const { rng, mat, shadowy } = CLAY;
+  const { rng, mat, shadowy, recolor } = CLAY;
 
   // Base slab
   const R = 5.8;
@@ -827,12 +909,13 @@ const CLAY = !window.THREE ? null : (function () {
     door.position.set(0, 0.005, 0.452); tent.add(door);
     // Fire ring, logs, flame, pot
     const fire = new THREE.Group(); fire.position.set(0.35, 0, 0.15);
+    const built = [tent]; // swapped out when the camping models load
     const stoneG = new THREE.DodecahedronGeometry(0.06, 0), stoneM = mat(0x9aa29b);
-    for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2, s = shadowy(new THREE.Mesh(stoneG, stoneM)); s.position.set(Math.cos(a) * 0.2, 0.03, Math.sin(a) * 0.2); s.rotation.set(i, i * 2, 0); fire.add(s); }
+    for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2, s = shadowy(new THREE.Mesh(stoneG, stoneM)); s.position.set(Math.cos(a) * 0.2, 0.03, Math.sin(a) * 0.2); s.rotation.set(i, i * 2, 0); fire.add(s); built.push(s); }
     const logG = new THREE.CylinderGeometry(0.025, 0.025, 0.28, 6), logM = mat(C.trunk);
-    [0, 2.1, 4.2].forEach((a) => { const l = shadowy(new THREE.Mesh(logG, logM)); l.rotation.set(Math.PI / 2 - 0.35, a, 0, 'YXZ'); l.position.y = 0.06; fire.add(l); });
+    [0, 2.1, 4.2].forEach((a) => { const l = shadowy(new THREE.Mesh(logG, logM)); l.rotation.set(Math.PI / 2 - 0.35, a, 0, 'YXZ'); l.position.y = 0.06; fire.add(l); built.push(l); });
     const flameM = new THREE.MeshStandardMaterial({ color: 0xe0652f, emissive: 0xe0652f, emissiveIntensity: 0.9, flatShading: true });
-    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.18, 5), flameM); flame.position.y = 0.14; fire.add(flame);
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.18, 5), flameM); flame.position.y = 0.14; fire.add(flame); built.push(flame);
     const pot = shadowy(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.085, 0.12, 12), mat(0x2b312d, { flatShading: false }))); pot.position.y = 0.3; fire.add(pot);
     const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.104, 0.104, 0.015, 12), mat(0x3c443f, { flatShading: false })); lid.position.y = 0.365; fire.add(lid);
     [1, -1].forEach((s) => { const leg = shadowy(new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.36, 4), mat(0x2b312d))); leg.position.set(s * 0.13, 0.17, 0); leg.rotation.z = s * 0.2; fire.add(leg); });
@@ -856,7 +939,7 @@ const CLAY = !window.THREE ? null : (function () {
     world.add(g);
     const tag = (txt, cls) => { const el = document.createElement('div'); el.className = 'cp' + (cls ? ' ' + cls : ''); el.innerHTML = txt; wrap.appendChild(el); return el; };
     return {
-      g, flame, steam, tail, pot, dog, f,
+      g, fire, tent, built, flame, steam, tail, pot, dog, f, mixer: null,
       end: cps[campIdx + 1] ? cps[campIdx + 1].p : 1,
       labels: [
         { el: tag('<b>Ask Ah Mah</b>'), obj: pot, at: new THREE.Vector3(0, 0.55, 0) },
@@ -969,11 +1052,13 @@ const CLAY = !window.THREE ? null : (function () {
   rider.add(bar(0.014, inkM).put(P.headT, V(0, 0.48, 0.19)));
   rider.add(bar(0.014, inkM).put(V(-0.11, 0.48, 0.19), V(0.11, 0.48, 0.19)));
   const saddle = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.025, 0.12), inkM)); saddle.position.set(0, 0.455, -0.12); rider.add(saddle);
-  rider.add(bar(0.01, inkM).put(V(0, 0.34, -0.2), V(0, 0.34, -0.38)));
+  // Rack and panniers: kept when the bike model swaps in, since it has none
+  const rack = [bar(0.01, inkM).put(V(0, 0.34, -0.2), V(0, 0.34, -0.38))];
+  rider.add(rack[0]);
   function bag(x, y, z, sx, sy, sz, m) { const b = shadowy(new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m)); b.position.set(x, y, z); rider.add(b); return b; }
-  bag(0.095, 0.25, -0.3, 0.07, 0.17, 0.2, bagM); bag(-0.095, 0.25, -0.3, 0.07, 0.17, 0.2, bagM);
-  bag(0.132, 0.25, -0.3, 0.008, 0.12, 0.03, bagDM); bag(-0.132, 0.25, -0.3, 0.008, 0.12, 0.03, bagDM);
-  bag(0, 0.39, -0.29, 0.15, 0.08, 0.16, bagDM);
+  rack.push(bag(0.095, 0.25, -0.3, 0.07, 0.17, 0.2, bagM), bag(-0.095, 0.25, -0.3, 0.07, 0.17, 0.2, bagM));
+  rack.push(bag(0.132, 0.25, -0.3, 0.008, 0.12, 0.03, bagDM), bag(-0.132, 0.25, -0.3, 0.008, 0.12, 0.03, bagDM));
+  rack.push(bag(0, 0.39, -0.29, 0.15, 0.08, 0.16, bagDM));
   bag(0, 0.43, 0.28, 0.12, 0.08, 0.08, bagM);
   const hip = V(0, 0.5, -0.09), shoulder = V(0, 0.73, 0.09);
   rider.add(bar(0.055, shirtM).put(hip, shoulder));
@@ -985,7 +1070,8 @@ const CLAY = !window.THREE ? null : (function () {
   legs.forEach((l) => rider.add(l.thigh, l.shin, l.crank));
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.008, 6, 20), inkM); ring.rotation.y = Math.PI / 2; ring.position.copy(P.bb).setX(0.03); rider.add(ring);
   const L1 = 0.23, L2 = 0.23, CR = 0.075;
-  function pose(crank) {
+  let wheelR = WR * 1.45, pose = poseBuilt;
+  function poseBuilt(crank) {
     legs.forEach((l) => {
       const a = crank + (l.s > 0 ? 0 : Math.PI);
       const Hp = V(l.s * 0.05, hip.y, hip.z);
@@ -1000,6 +1086,122 @@ const CLAY = !window.THREE ? null : (function () {
   }
   rider.scale.setScalar(1.45);
   world.add(rider);
+
+  // ---- Models: swap in the low-poly bike, rider, dog and camp once loaded; the built ones above are the fallback ----
+  const RP = { S: 0.62, k: 0.85, seatY: 0.8, seatZ: -0.03, lean: 0.85, arm: 1.15, rack: 0.05, look: 0.35, palm: 0.08 }; // fit of rider to bike
+  function mountRider(bikeSrc, guySrc) {
+    const g = new THREE.Group(); g.scale.setScalar(RP.S); rider.add(g);
+    // Bike, modelled in mm: split out the wheels and the crankset so they can turn
+    const src = bikeSrc.scene.getObjectByProperty('isMesh', true), geo = src.geometry;
+    const tex = src.material.map, cv = document.createElement('canvas');
+    cv.width = tex.image.width; cv.height = tex.image.height;
+    const cx = cv.getContext('2d'); cx.drawImage(tex.image, 0, 0);
+    const img = cx.getImageData(0, 0, cv.width, cv.height), px = img.data;
+    for (let i = 0; i < px.length; i += 4) if (px[i] > 150 && px[i + 1] < 110) { px[i] = 0xc0; px[i + 1] = 0x4a; px[i + 2] = 0x18; } // red paint → site rust
+    cx.putImageData(img, 0, 0);
+    const bikeMat = src.material.clone();
+    bikeMat.map = new THREE.CanvasTexture(cv); bikeMat.map.flipY = tex.flipY; bikeMat.roughness = 0.6;
+    const HUB = [[-190, -500], [-190, 505]], BB = [-192, -65], pos = geo.attributes.position, idx = geo.index.array;
+    const near = (i, c, r) => (pos.getY(i) - c[0]) ** 2 + (pos.getZ(i) - c[1]) ** 2 < r * r;
+    const all = (t, c, r) => near(idx[t], c, r) && near(idx[t + 1], c, r) && near(idx[t + 2], c, r);
+    const parts = [[], [], [], []]; // frame, rear wheel, front wheel, crankset
+    for (let t = 0; t < idx.length; t += 3) parts[all(t, HUB[0], 322) ? 1 : all(t, HUB[1], 322) ? 2 : all(t, BB, 205) ? 3 : 0].push(idx[t], idx[t + 1], idx[t + 2]);
+    const bk = new THREE.Group(); bk.scale.setScalar(0.001 * RP.k); bk.position.y = 0.507 * RP.k; g.add(bk);
+    const spinners = parts.map((list, i) => {
+      const pg = new THREE.BufferGeometry();
+      ['position', 'normal', 'uv'].forEach((a) => geo.attributes[a] && pg.setAttribute(a, geo.attributes[a]));
+      pg.setIndex(list);
+      const c = [null, HUB[0], HUB[1], BB][i], pivot = new THREE.Group(), m = shadowy(new THREE.Mesh(pg, bikeMat), true, false);
+      if (c) { pivot.position.set(0, c[0], c[1]); m.position.set(0, -c[0], -c[1]); }
+      pivot.add(m); bk.add(pivot);
+      return pivot;
+    });
+    wheels.length = 0; wheels.push(spinners[1], spinners[2]);
+    wheelR = 0.317 * RP.k * RP.S * 1.45;
+    // Built bike and rider go; the rack and panniers stay, lifted to clear the bigger wheel
+    rider.children.forEach((c) => { if (c !== g && !rack.includes(c)) c.visible = false; });
+    rack.forEach((c) => { c.position.y += RP.rack; });
+    // Rider: hips on the saddle, leaning to the bars, feet on the pedals
+    const guy = THREE.SkeletonUtils.clone(guySrc.scene);
+    guy.position.set(0, RP.k * 0.982 - RP.seatY, RP.k * -0.24 + RP.seatZ);
+    guy.traverse((o) => { if (o.isMesh && o.name.startsWith('Backpack')) o.visible = false; }); // the panniers carry the kit
+    g.add(guy);
+    const r = CLAY.rig(guy), b = r.b;
+    ['UpperArmL', 'UpperArmR'].forEach((n) => b[n].scale.multiplyScalar(RP.arm));
+    r.reset();
+    const ankle = { L: r.tip(b.LowerLegL, b.FootL), R: r.tip(b.LowerLegR, b.FootR) };
+    const spine = r.tip(b.Hips, b.Neck), wv = V(0, 0, 0), pole = V(0, 0, 0), hipW = V(0, 0, 0);
+    const local = (x, y, z) => g.localToWorld(wv.set(x, y, z));
+    const dir = (x, y, z) => pole.set(x, y, z).transformDirection(g.matrixWorld);
+    const PHI = Math.atan2(92, -135); // right pedal's resting angle in the model
+    pose = function (crank) {
+      spinners[3].rotation.x = crank;
+      rider.updateWorldMatrix(true, true);
+      r.reset();
+      // Lean the upper body forward from the hips
+      b.Hips.getWorldPosition(hipW);
+      const len = spine.length();
+      g.worldToLocal(hipW);
+      r.aim(b.Hips, spine, local(hipW.x, hipW.y + Math.cos(RP.lean) * len, hipW.z + Math.sin(RP.lean) * len));
+      // Head up, eyes on the road
+      b.Neck.getWorldPosition(hipW); g.worldToLocal(hipW);
+      r.aim(b.Neck, b.Head.position, local(hipW.x, hipW.y + 1, hipW.z + RP.look));
+      // Hands on the grips: wrist behind the bar, palm on it, fingers wrapped under
+      [['L', 1], ['R', -1]].forEach(([s, x]) => {
+        const grip = local(x * 0.2 * RP.k, 0.907 * RP.k, 0.34 * RP.k).clone(); // bar ends, from the mesh (mm)
+        const wrist = local(x * 0.2 * RP.k, 0.907 * RP.k + RP.palm * 0.5, 0.34 * RP.k - RP.palm).clone();
+        r.reach(b['UpperArm' + s], b['LowerArm' + s], b['Wrist' + s].position, wrist, dir(x, -1, -0.3));
+        r.aim(b['Wrist' + s], b['Middle1' + s].position, grip);
+        ['Index', 'Middle', 'Ring', 'Pinky'].forEach((f) => {
+          const f2 = b[f + '2' + s];
+          f2.getWorldPosition(wv); g.worldToLocal(wv);
+          r.aim(f2, b[f + '3' + s].position, local(wv.x, wv.y - 1, wv.z - 0.4));
+        });
+      });
+      // Feet on the pedals; the crank turns them
+      [['L', 1, 0], ['R', -1, Math.PI]].forEach(([s, x, off]) => {
+        const a = PHI - crank + off;
+        const ped = local(x * 0.13 * RP.k, (BB[0] + 507 + Math.sin(a) * 160) * 0.001 * RP.k + 0.02, (BB[1] + Math.cos(a) * 160) * 0.001 * RP.k).clone();
+        r.reach(b['UpperLeg' + s], b['LowerLeg' + s], ankle[s], ped, dir(0, 0.3, 1));
+        r.put(b['Foot' + s], ped);
+      });
+    };
+  }
+  if (THREE.SkeletonUtils) CLAY.model('bicycle').then((bk) => bk && CLAY.model('adventurer').then((guy) => guy && mountRider(bk, guy)));
+
+  // Camp: tent and fire cut from the camping set by node index, shiba by the fire
+  function piece(gl, ids, at, s) {
+    const outer = new THREE.Group(), inner = new THREE.Group();
+    outer.scale.setScalar(s); inner.position.set(-at[0], -at[1], -at[2]); outer.add(inner);
+    ids.forEach((i) => inner.add(gl.scene.getObjectByName(gl.parser.json.nodes[i].name).clone()));
+    return outer;
+  }
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  function mountCamp(gl) {
+    camp.built.forEach((m) => { m.visible = false; });
+    const tent = recolor(piece(gl, range(0, 31).filter((i) => i !== 22), [0.51, -0.445, -0.29], 0.55),
+      { mat13: C.bag, mat23: 0x2b312d, mat20: C.trunk, mat17: C.rockLow }, true);
+    tent.position.copy(camp.tent.position); tent.rotation.copy(camp.tent.rotation);
+    camp.g.add(tent);
+    const at = [-1.16, -0.445, 0.95], wood = { mat20: C.trunk, mat19: 0xa8774a, mat18: 0xd9b07a, mat15: 0x9aa29b, mat23: 0x2b312d };
+    camp.fire.add(recolor(piece(gl, [120, 85, 90, 91, 93, 94, 32, ...range(36, 47), 82, 57, 58, 114, 117], at, 0.75), wood, true));
+    const flame = recolor(piece(gl, [86, 88, 95, 96, 98, 108, 109, 97, ...range(99, 107), 122, ...range(125, 129)], at, 0.75),
+      { mat8: { glow: 0xe0652f }, mat12: { glow: 0xf2b84b }, mat13: { glow: 0xf08a3a }, mat14: { glow: 0xe0652f } }, true);
+    flame.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    camp.fire.add(flame); camp.flame = flame;
+  }
+  function mountDog(gl) {
+    camp.dog.children.forEach((c) => { c.visible = false; });
+    const shiba = recolor(THREE.SkeletonUtils.clone(gl.scene), { Main: 0xb9773f, Main_Light: 0xeadcc4 });
+    shiba.scale.setScalar(0.1); shiba.rotation.y = Math.PI / 2; // model faces +z, the built dog +x
+    camp.dog.add(shiba);
+    const idle = gl.animations.find((a) => a.name === 'Idle');
+    if (idle) { camp.mixer = new THREE.AnimationMixer(shiba); camp.mixer.clipAction(idle).play(); }
+  }
+  if (camp) {
+    CLAY.model('camping').then((gl) => gl && mountCamp(gl));
+    if (THREE.SkeletonUtils) CLAY.model('shiba').then((gl) => gl && mountDog(gl));
+  }
 
   // Lights
   const hemi = new THREE.HemisphereLight(0xf4f1ea, 0x6f7c6a, 0.55);
@@ -1122,7 +1324,7 @@ const CLAY = !window.THREE ? null : (function () {
     cur = still ? target : cur + (target - cur) * Math.min(1, dt * 6);
     const moved = Math.abs(cur - prev) * routeLen;
     if (moved > 1e-5) {
-      const spin = moved / (WR * rider.scale.x);
+      const spin = moved / wheelR;
       wheels.forEach((w) => { w.rotation.x += spin; });
       crank += spin * 0.55;
     }
@@ -1176,6 +1378,7 @@ const CLAY = !window.THREE ? null : (function () {
         m.scale.setScalar(0.035 + Math.sin(u * Math.PI) * 0.05);
       });
       camp.tail.rotation.y = still ? 0 : Math.sin(time * 10) * 0.5;
+      if (camp.mixer && camp.g.visible && !still) camp.mixer.update(dt);
       const on = camp.g.visible && s > 0.6 && progress < camp.end - 0.02 && !quiet;
       camp.labels.forEach((l) => {
         l.el.classList.toggle('on', on);
@@ -1380,7 +1583,47 @@ const CLAY = !window.THREE ? null : (function () {
       const end = limb(l.up, l.lo, V(l.s * 0.055, -0.02, 0), V(l.s * 0.15, -0.33 + 0.08 * Math.sin(ph), -0.15), 0.21, V(l.s, 0.3, 0.7));
       l.shoe.position.copy(end).add(tmp2.set(0, -0.01, -0.02));
     });
+    if (climbRig) poseModel(climber, climbRig,
+      [1, -1].map((s) => [s, [s * 0.17, 0.47 + 0.09 * Math.sin(phase + (s > 0 ? 0 : Math.PI)), -0.12], [s, -0.6, 0.5], [0, 1, -0.4]]),
+      [1, -1].map((s) => [s, [s * 0.13, -0.36 + 0.08 * Math.sin(phase + (s > 0 ? Math.PI : 0)), -0.1], [s, 0.3, 0.7]]), 0.4);
   }
+
+  // Low-poly adventurer stands in for both figures once loaded: posed by IK onto the built figures' hand and foot targets
+  const PS = 0.7, pw = V(0, 0, 0), pd = V(0, 0, 0);
+  let climbRig = null;
+  function dress(p, hipY, paint) {
+    [p.head, p.helmet, p.torso, p.pelvis, ...p.arms.flatMap((a) => [a.up, a.lo]), ...p.legs.flatMap((l) => [l.up, l.lo, l.shoe])].forEach((m) => { m.visible = false; });
+    const guy = THREE.SkeletonUtils.clone(climbSrc.scene);
+    if (paint) CLAY.recolor(guy, paint);
+    guy.traverse((o) => { if (o.isMesh && o.name.startsWith('Backpack')) o.visible = false; });
+    guy.scale.setScalar(PS / 1.3); guy.rotation.y = Math.PI; guy.position.y = hipY; // faces the wall (-z); its left is our -x
+    p.body.add(guy);
+    const r = CLAY.rig(guy);
+    r.ankle = { L: r.tip(r.b.LowerLegL, r.b.FootL), R: r.tip(r.b.LowerLegR, r.b.FootR) };
+    return r;
+  }
+  // Body-space point or direction to world
+  const bp = (p, x, y, z) => p.body.localToWorld(pw.set(x, y, z));
+  const bd = (p, x, y, z) => pd.set(x, y, z).transformDirection(p.body.matrixWorld);
+  function poseModel(p, r, hands, feet, look) {
+    const b = r.b;
+    p.g.updateWorldMatrix(true, true);
+    r.reset();
+    b.Neck.getWorldPosition(pw); p.body.worldToLocal(pw);
+    r.aim(b.Neck, b.Head.position, bp(p, pw.x, pw.y + 1, pw.z + look).clone());
+    hands.forEach(([s, to, pole, up]) => {
+      const n = s > 0 ? 'R' : 'L';
+      r.reach(b['UpperArm' + n], b['LowerArm' + n], b['Wrist' + n].position, bp(p, ...to).clone(), bd(p, ...pole).clone());
+      b['Wrist' + n].getWorldPosition(pw);
+      r.aim(b['Wrist' + n], b['Middle1' + n].position, pw.add(bd(p, ...up)).clone());
+    });
+    feet.forEach(([s, to, pole]) => {
+      const n = s > 0 ? 'R' : 'L', at = bp(p, ...to).clone();
+      r.reach(b['UpperLeg' + n], b['LowerLeg' + n], r.ankle[n], at, bd(p, ...pole).clone());
+      r.put(b['Foot' + n], at);
+    });
+  }
+  let climbSrc = null;
 
   // Belayer at the base, side-on, looking up
   const belayer = person(mat(C.tan, { flatShading: false }), 0xf5f7f8);
@@ -1400,6 +1643,15 @@ const CLAY = !window.THREE ? null : (function () {
     world.add(b.g);
     b.dev = dev;
   })();
+  if (THREE.SkeletonUtils) CLAY.model('adventurer').then((src) => {
+    if (!src) return;
+    climbSrc = src;
+    climbRig = dress(climber, -0.865 * PS / 1.3);
+    const br = dress(belayer, 0, { Green: C.tanDark, LightGreen: C.tan });
+    poseModel(belayer, br,
+      [[1, [0.05, 0.62, -0.2], [1, -1, 0], [0, 0.6, -1]], [-1, [-0.07, 0.44, -0.1], [-1, -0.3, 0.5], [0.3, -0.2, -1]]],
+      [1, -1].map((s) => [s, [s * 0.09, 0.035, s * 0.04], [0, 0, -1]]), 0.6);
+  });
 
   // Rope: rebuilt as a tube each frame from belay device, through clipped draws, to the harness
   const ropeM = mat(C.rope, { roughness: 0.7, flatShading: false });
