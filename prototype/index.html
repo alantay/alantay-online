@@ -1,6 +1,10 @@
+<!doctype html>
+<html lang="en">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Alan Tay Portfolio</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<meta name="description" content="Alan Tay, frontend and full-stack engineer in Singapore. Work, experience and resume.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
 <style>
 /* Layout: one fixed stage holds all three 3D scenes (island, crag, ride); the page scroll only drives it.
    GSAP scrubs the handoffs between scenes; copy lives in a fixed HUD; one route line tracks the whole journey. */
@@ -11,10 +15,17 @@
   --muted: #46524a;
   --rule: #cdd3cc;
   --accent: #c04a18;
-  --accent-text: #c04a18;
+  --accent-text: #a83f12;
+  --accent-hover: #a83f12;
   --on-accent: #ffffff;
   --rock: #a9b0a6;
   --rock2: #949c91;
+  --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --sky-top: #a9c9e0;
+  --sky-bot: #f4e4d4;
+  --cloud: #fbf7f1;
+  --sea: 1;
+  --sun-x: 74vw; --sun-y: 30vh;
   --display: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --gutter: clamp(16px, 4.4vw, 64px);
@@ -22,44 +33,76 @@
   --route-h: 76px;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #0e1411; --tint: #0e1411; --ink: #e6e9e4; --muted: #a2aca5; --rule: #2a352f; --accent-text: #e0652f; --rock: #2b332e; --rock2: #232a26; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --bg: #0e1411; --tint: #0e1411; --ink: #e6e9e4; --muted: #a2aca5; --rule: #2a352f; --accent-text: #e0652f; --rock: #2b332e; --rock2: #232a26; --cloud: #2a3540; color-scheme: dark; }
 }
-:root[data-theme="dark"] { --bg: #0e1411; --tint: #0e1411; --ink: #e6e9e4; --muted: #a2aca5; --rule: #2a352f; --accent-text: #e0652f; --rock: #2b332e; --rock2: #232a26; color-scheme: dark; }
+:root[data-theme="dark"] { --bg: #0e1411; --tint: #0e1411; --ink: #e6e9e4; --muted: #a2aca5; --rule: #2a352f; --accent-text: #e0652f; --rock: #2b332e; --rock2: #232a26; --cloud: #2a3540; color-scheme: dark; }
 
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-stopped { overflow: clip; }
+html { scrollbar-color: color-mix(in srgb, var(--ink) 35%, transparent) transparent; caret-color: var(--accent); }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--display); font-size: 16px; line-height: 1.5; }
 a { color: inherit; text-decoration: none; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 3px; }
+::selection { background: var(--accent); color: var(--on-accent); }
+.skip { position: fixed; left: var(--gutter); top: 12px; z-index: 30; padding: 10px 14px; background: var(--ink); color: var(--bg); font-weight: 500; transform: translateY(-200%); }
+.skip:focus { transform: none; }
+.resume:focus { outline: none; }
 h1, h2, h3 { text-wrap: balance; }
 .mono { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+/* Keyboard users tab through the screen-reader lists; the focused item surfaces as a card under the nav */
+.sr-only:focus-within { position: fixed; z-index: 20; left: var(--gutter); top: calc(var(--nav-h) + 8px); width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; list-style: none; }
+.sr-only:focus-within li:not(:focus-within) { display: none; }
+.sr-only:focus-within li { max-width: 46ch; padding: 12px 14px; background: var(--bg); border: 1px solid var(--rule); color: var(--muted); }
+.sr-only:focus-within a { color: var(--ink); font-weight: 600; }
 
 /* Nav floats over the stage */
-.nav { position: fixed; left: 0; right: 0; top: 0; z-index: 10; padding-top: env(safe-area-inset-top, 0px); }
+.nav { position: fixed; left: 0; right: 0; top: 0; z-index: 10; padding-top: env(safe-area-inset-top, 0px); transition: background-color 300ms ease; }
+/* Past the ride the postcard scrolls under the nav, so the nav gets a floor */
+.nav.solid { background: var(--tint); }
 .nav-in { height: var(--nav-h); padding-inline: var(--gutter); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.brand { font-weight: 600; font-size: 18px; }
+.brand { font: italic 400 26px/1 var(--serif); letter-spacing: -0.01em; }
 .links { display: flex; align-items: center; gap: 28px; font-size: 15px; color: var(--muted); }
 .links a:hover { color: var(--ink); }
+.theme:hover, .copybtn:hover { border-color: var(--ink); }
 .theme { height: 36px; padding: 0 12px; border: 1px solid var(--rule); background: transparent; color: var(--ink); font: 500 12px var(--mono); cursor: pointer; border-radius: 0; }
-.btn { height: 52px; padding: 0 26px; display: inline-flex; align-items: center; gap: 10px; background: var(--accent); color: var(--on-accent); font-weight: 500; transition: transform 120ms ease; white-space: nowrap; }
+.btn { height: 52px; padding: 0 26px; display: inline-flex; align-items: center; gap: 10px; background: var(--accent); color: var(--on-accent); font-weight: 500; transition: transform 120ms ease, background-color 160ms ease, color 160ms ease; white-space: nowrap; }
+.btn:hover { background: var(--accent-hover); }
 .btn:active { transform: translateY(1px); }
 .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+.btn.ghost:hover { background: var(--ink); color: var(--bg); }
 
 /* Stage: fixed, full viewport. Each layer is one scene; the view box sets where its canvas sits */
-.stage-fx { position: fixed; inset: 0; z-index: 0; background: var(--tint); overflow: hidden; }
-.layer { position: absolute; inset: 0; }
+.stage-fx { position: fixed; inset: 0; z-index: 0; background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bot) var(--sky-stop, 74%)); overflow: hidden; }
+/* Sun glow sits behind every scene; its place moves through the day */
+.sun { position: absolute; left: 0; top: 0; width: 70vmax; height: 70vmax; pointer-events: none; will-change: transform;
+  transform: translate3d(calc(var(--sun-x) - 35vmax), calc(var(--sun-y) - 35vmax), 0);
+  background: radial-gradient(closest-side, rgba(255, 246, 228, 0.95), rgba(255, 236, 205, 0.4) 22%, rgba(255, 230, 200, 0) 70%); }
+:root[data-theme="dark"] .sun { opacity: 0.35; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sun { opacity: 0.35; } }
+/* Cloud sea: the islands float above it. Back layer behind the scenes, front layer drifts across their feet */
+.sea { position: absolute; left: 0; bottom: 0; width: 200%; height: 46vh; pointer-events: none; opacity: var(--sea); will-change: transform; }
+.sea.back { height: 40vh; animation: drift 140s linear infinite; }
+.sea.front { height: 24vh; animation: drift 90s linear infinite reverse; }
+@keyframes drift { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .sea { animation: none; } }
+.layer { position: absolute; inset: 0; contain: strict; }
 .layer.crag, .layer.ride { visibility: hidden; opacity: 0; }
 .view { position: absolute; }
 .view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.hero .view { top: var(--nav-h); bottom: var(--route-h); left: 40%; right: var(--gutter); }
+.hero .view { top: 0; bottom: 0; left: 34%; right: 0; }
 .crag .view { top: var(--nav-h); bottom: var(--route-h); left: var(--gutter); right: 42%; }
-.ride .view { inset: 0; transform-origin: 0 0; outline: 1px solid var(--rule); outline-offset: -1px; }
-.scrim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 95% at 0% 100%, var(--tint) 22%, transparent 62%); }
-/* Rock band that sweeps up the screen between island and crag */
-.wipe { position: absolute; left: 0; right: 0; top: 0; height: 170vh; visibility: hidden; will-change: transform;
-  background: repeating-linear-gradient(174deg, var(--rock) 0 54px, var(--rock2) 54px 60px, var(--rock) 60px 130px, var(--rock2) 130px 133px); }
+.ride .view { --pc: 0; inset: 0; transform-origin: 0 0;
+  box-shadow: 0 0 0 calc(var(--pc) * 26px) #fbf8f1, calc(var(--pc) * 30px) calc(var(--pc) * 60px) calc(var(--pc) * 90px) calc(var(--pc) * 26px) rgba(52, 36, 22, calc(var(--pc) * 0.28)); }
+/* Postmark: inked onto the postcard as it lands */
+.stamp { position: absolute; right: 4%; top: 6%; width: 17%; color: #8e2f0e; opacity: calc(var(--pc) * 0.8); transform: rotate(-9deg); mix-blend-mode: multiply; pointer-events: none; }
+.scrim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 95% at 0% 100%, rgba(18, 16, 12, 0.8) 10%, rgba(18, 16, 12, 0.5) 40%, transparent 72%); }
+/* Cloud bank the camera dives through between scenes */
+.wipe { position: absolute; left: -5%; right: -5%; top: 0; height: 170vh; visibility: hidden; will-change: transform; pointer-events: none; }
+.wipe .billow { position: absolute; left: 0; right: 0; top: 10%; bottom: 10%; will-change: transform; }
 .fallback { position: absolute; inset: 0; display: grid; place-items: center; }
+.grain { position: fixed; inset: 0; z-index: 9; pointer-events: none; opacity: 0.07; will-change: transform;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .cp {
   position: absolute; left: 0; top: 0; transform: translate(-50%, calc(-100% - 6px)); pointer-events: none;
   padding: 4px 8px; background: var(--tint); border: 1px solid var(--rule); font: 11px var(--mono); color: var(--ink); white-space: nowrap;
@@ -80,11 +123,17 @@ h1, h2, h3 { text-wrap: balance; }
 .chapters { display: grid; width: 100%; }
 .ch { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; min-width: 0; }
 .ch:not(.on) { visibility: hidden; }
-h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-spacing: -0.035em; font-weight: 600; }
-.ch h2, .ch h3 { margin: 0; font-size: clamp(34px, 3.8vw, 56px); line-height: 1.06; letter-spacing: -0.03em; font-weight: 600; }
+h1 { margin: 0; font: 400 clamp(52px, 6.2vw, 96px)/0.94 var(--serif); letter-spacing: -0.02em; }
+h1 em, .ch h2 em, .ch h3 em, .resume h2 em { font-style: italic; color: var(--accent-text); }
+.ch h2, .ch h3 { margin: 0; font: 400 clamp(42px, 4.6vw, 72px)/0.98 var(--serif); letter-spacing: -0.015em; }
 .lede { margin: 0; max-width: 36ch; font-size: 19px; color: var(--muted); }
-.kicker { color: var(--accent-text); letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
-.ch .org { margin: 0; font-size: 19px; font-weight: 500; }
+.ch .org { margin: -6px 0 0; font-size: 17px; font-weight: 500; }
+.ch .org .mono { margin-left: 10px; }
+/* Ride copy sits on the dark scrim over the road */
+.panel.ride { --ink: #f6f1e8; --muted: #e4ddd1; --accent-text: #ffb27f; --rule: rgba(246, 241, 232, 0.3); color: var(--ink); text-shadow: 0 1px 2px rgba(18, 16, 12, 0.35), 0 2px 24px rgba(18, 16, 12, 0.4); }
+.panel.ride .btn.ghost { border-color: var(--ink); }
+body[data-zone="ride"] .route { --ink: #f6f1e8; --muted: #e2dbd0; --rule: rgba(246, 241, 232, 0.4); --accent-text: #ffb27f; }
+body[data-zone="ride"] .readout { color: #e2dbd0; }
 .ch .stack { max-width: 46ch; line-height: 1.7; }
 .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .tags li { border: 1px solid var(--rule); padding: 5px 10px; font: 12px var(--mono); color: var(--ink); }
@@ -98,14 +147,15 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
 /* Route: one elevation profile for the whole page. Ticks jump to each stop */
 .route { position: absolute; left: var(--gutter); right: var(--gutter); bottom: env(safe-area-inset-bottom, 0px); height: var(--route-h); }
 .route svg { position: absolute; left: 0; top: 18px; width: 100%; height: 36px; overflow: visible; }
+.route path.fill { fill: var(--accent); fill-opacity: 0.14; stroke: none; }
 .route path { fill: none; stroke: var(--rule); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .route path.done { stroke: var(--accent-text); stroke-width: 2; }
-.ticks { position: absolute; left: 0; right: 0; top: 52px; height: 20px; }
-.ticks button { position: absolute; top: 0; width: 22px; height: 20px; margin-left: -11px; padding: 0; background: none; border: 0; cursor: pointer; }
-.ticks button::after { content: ''; position: absolute; left: 50%; top: 4px; width: 1px; height: 8px; background: var(--muted); transition: background 200ms ease, height 200ms ease; }
+.ticks { position: absolute; left: 0; right: 0; top: 44px; height: 32px; }
+.ticks button { position: absolute; top: 0; width: 32px; height: 32px; margin-left: -16px; padding: 0; background: none; border: 0; cursor: pointer; }
+.ticks button::after { content: ''; position: absolute; left: 50%; top: 12px; width: 1px; height: 8px; background: var(--muted); transform-origin: top; transition: background 200ms ease, transform 200ms ease; }
 .ticks button.done::after { background: var(--accent-text); }
-.ticks button:hover::after { height: 12px; background: var(--ink); }
-.dot { position: absolute; left: 0; top: 0; width: 8px; height: 8px; margin: -4px 0 0 -4px; background: var(--accent); }
+.ticks button:hover::after, .ticks button:focus-visible::after { transform: scaleY(1.5); background: var(--ink); }
+.dot { position: absolute; left: 0; top: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
 .here { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); margin-top: -10px; white-space: nowrap; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); }
 .readout { position: absolute; right: 0; bottom: calc(100% + 6px); display: flex; gap: 20px; }
 .readout b { color: var(--ink); font-weight: 500; }
@@ -121,7 +171,7 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
   padding: calc(var(--nav-h) + 56px) var(--gutter) 0;
   display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: 1fr auto; gap: 40px 56px;
 }
-.resume h2 { margin: 0; font-size: clamp(36px, 3.6vw, 52px); letter-spacing: -0.03em; font-weight: 600; line-height: 1.05; }
+.resume h2 { margin: 0; font: 400 clamp(52px, 5.6vw, 88px)/0.95 var(--serif); letter-spacing: -0.015em; }
 .resume .intro { margin: 16px 0 0; color: var(--muted); font-size: 17px; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .slot { grid-column: 2; grid-row: 1; align-self: start; width: 100%; aspect-ratio: var(--va, 16 / 9); }
@@ -133,14 +183,15 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
 
 @media (max-width: 900px) {
   :root { --route-h: 60px; }
-  .links .hide-sm { display: none; }
   .links { gap: 16px; }
   .hero .view, .crag .view { top: var(--nav-h); bottom: auto; height: 48vh; height: 48dvh; left: 0; right: 0; }
-  .ride .view { bottom: auto; height: 60vh; height: 60dvh; }
-  .scrim { background: linear-gradient(to top, var(--tint) 44%, transparent 64%); }
+  .ride .view { bottom: auto; }
+  .scrim { background: linear-gradient(to top, rgba(18, 16, 12, 0.78) 30%, transparent 62%); }
+  .ride .view { height: 100vh; height: 100dvh; }
+  .hero .view { top: 0; height: 58vh; height: 58dvh; }
   .panel, .panel.hero, .panel.crag, .panel.ride { left: var(--gutter); right: var(--gutter); width: auto; top: auto; bottom: calc(var(--route-h) + 16px); justify-content: flex-end; gap: 16px; }
-  h1 { font-size: 34px; }
-  .ch h2, .ch h3 { font-size: 30px; }
+  h1 { font-size: 46px; }
+  .ch h2, .ch h3 { font-size: 38px; }
   .lede { font-size: 16px; }
   .ch { gap: 12px; }
   .ch .org { font-size: 17px; }
@@ -154,6 +205,8 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
 }
 </style>
 
+<a class="skip" href="#resume">Skip to resume</a>
+<div class="grain" aria-hidden="true"></div>
 <header class="nav" id="nav">
   <div class="nav-in">
     <a class="brand" href="#top">alan tay</a>
@@ -167,10 +220,14 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
 </header>
 
 <div class="stage-fx" id="fx" aria-hidden="true">
+  <div class="sun" id="sun"></div>
+  <div class="sea back" id="seab"></div>
   <div class="layer hero" id="lhero"><div class="view" id="vhero"><canvas id="scene"></canvas></div></div>
   <div class="layer crag" id="lcrag"><div class="view" id="vcrag"><canvas id="crag"></canvas></div></div>
-  <div class="layer ride" id="lride"><div class="view" id="vride"><canvas id="ride"></canvas></div><div class="scrim" id="scrim"></div></div>
-  <div class="wipe" id="wipe"></div>
+  <div class="layer ride" id="lride"><div class="view" id="vride"><canvas id="ride"></canvas><svg class="stamp" viewBox="0 0 120 120" aria-hidden="true"><g fill="none" stroke="currentColor"><circle cx="60" cy="60" r="56" stroke-width="3"/><circle cx="60" cy="60" r="44" stroke-width="1.5"/><path d="M8 52h104M8 68h104" stroke-width="1.5" stroke-dasharray="7 5"/></g><text x="60" y="42" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" letter-spacing="2" fill="currentColor">SINGAPORE</text><text x="60" y="65" text-anchor="middle" font-family="Instrument Serif, serif" font-size="22" font-style="italic" fill="currentColor">48.4 km</text><text x="60" y="88" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9" letter-spacing="1.5" fill="currentColor">ALAN TAY</text></svg></div><div class="scrim" id="scrim"></div></div>
+  <div class="sea front" id="seaf"></div>
+  <div class="wipe" id="wipe"><i class="billow"></i></div>
+  <div class="wipe" id="wipe2"><i class="billow"></i></div>
 </div>
 
 <main id="top">
@@ -178,8 +235,8 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
     <div class="panel hero" id="phero">
       <div class="chapters" id="chapters">
         <div class="ch on">
-          <h1>Alan Tay builds web products, front to back.</h1>
-          <p class="lede">Frontend and full-stack engineer. Off the clock I'm on a rock face or a loaded touring bike.</p>
+          <h1>Alan Tay builds web products, <em>front to back.</em></h1>
+          <p class="lede">Frontend and full-stack engineer at [EMPLOYER], Singapore. Off the clock I'm on a rock face or a loaded touring bike.</p>
         </div>
       </div>
       <a class="btn" href="#work" id="seework">See work</a>
@@ -190,14 +247,14 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
       <div class="readout mono" aria-hidden="true"><span>Dist <b id="rd">0.0</b> km</span><span>Elev <b id="re">+0</b> m</span><span>Grade <b id="rg">2%</b></span></div>
       <svg viewBox="0 0 1000 36" preserveAspectRatio="none" aria-hidden="true">
         <defs><clipPath id="rclip"><rect id="rrect" x="-10" y="-20" width="0" height="80"></rect></clipPath></defs>
-        <path id="rbase"></path><path class="done" id="rdone" clip-path="url(#rclip)"></path>
+        <path class="fill" id="rfill"></path><path id="rbase"></path><path class="done" id="rdone" clip-path="url(#rclip)"></path>
       </svg>
       <div class="ticks" id="ticks"></div>
-      <span class="dot" id="rdot"></span><span class="here mono" id="rhere" aria-live="polite"></span>
+      <span class="dot" id="rdot"></span><span class="here mono" id="rhere" aria-hidden="true"></span>
     </nav>
   </div>
 
-  <section class="spacer" id="stage" aria-label="Intro"></section>
+  <section class="spacer" id="stage" aria-label="Intro"><div class="sr-only" id="hlist"></div></section>
   <div class="gap"></div>
   <section class="spacer" id="experience" aria-labelledby="xtitle">
     <h2 class="sr-only" id="xtitle">Experience</h2>
@@ -209,13 +266,14 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-s
     <ul class="sr-only" id="wlist"></ul>
   </section>
 
-  <section class="resume" id="resume">
+  <section class="resume" id="resume" tabindex="-1">
     <div>
       <h2 class="rv">Resume</h2>
       <p class="intro rv">One page, plain, printable.</p>
       <div class="actions rv">
-        <a class="btn" href="#">View resume</a>
-        <a class="btn ghost" href="#">Download PDF</a>
+        <!-- [PLACEHOLDER] drop the PDF at prototype/resume.pdf -->
+        <a class="btn" href="resume.pdf" target="_blank" rel="noopener">View resume</a>
+        <a class="btn ghost" href="resume.pdf" download>Download PDF</a>
       </div>
       <ul class="rows" id="contacts"></ul>
     </div>
@@ -234,22 +292,22 @@ const SITE = {
   // Hero checkpoints. p = hero scroll progress (0..1) where each one begins.
   hero: [
     { k: 'Trailhead', p: 0 },
-    { k: 'Front end', p: 0.2, title: 'Interfaces that load fast and read clearly.', body: 'Streaming chat UIs, accessible components, and layouts that hold up on a phone.', tags: ['React', 'Next.js', 'TypeScript', 'CSS', 'Accessibility'] },
-    { k: 'Back end', p: 0.4, title: 'APIs and data that hold up.', body: 'Typed APIs, Postgres schemas, auth and LLM routing, with tests and evals behind them.', tags: ['Node', 'PostgreSQL', 'Prisma', 'Redis'] },
+    { k: 'Front end', p: 0.2, title: 'Interfaces that load fast and *read clearly.*', body: 'Streaming chat UIs, accessible components, and layouts that work on a phone.', tags: ['React', 'Next.js', 'TypeScript', 'CSS', 'Accessibility'] },
+    { k: 'Back end', p: 0.4, title: 'APIs and data that *hold up.*', body: 'Typed APIs, Postgres schemas, auth and LLM routing, with tests and evals behind them.', tags: ['Node', 'PostgreSQL', 'Prisma', 'Redis'] },
     // camp: true places the campsite (pot = Ask Ah Mah, dog = Towner Godpawrents) at this checkpoint
-    { k: 'Projects', p: 0.6, camp: true, title: 'Two side projects, both live.', body: 'Designed, built and run by me. Still shipping on weekends.',
+    { k: 'Projects', p: 0.6, camp: true, title: 'Two side projects, *both live.*', body: 'Designed, built and run by me. Still shipping on weekends.',
       projects: [
         { name: 'Ask Ah Mah', line: 'AI cooking chat, Next.js, AI SDK, Postgres', href: 'https://ask-ah-mah.vercel.app' },
         { name: 'Towner Godpawrents', line: 'Dog-sitting diary, Astro, Redis', href: 'https://townergodpawrents.vercel.app' },
       ] },
-    { k: 'Off clock', p: 0.82, title: 'Weekends on rock and long roads.', body: '[Climbing and touring line: longest tour, favourite crag.]', tags: ['[LONGEST TOUR] km', '[HARDEST SEND]'] },
+    { k: 'Off clock', p: 0.82, title: 'Weekends on rock and *long roads.*', body: '[Climbing and touring line: longest tour, favourite crag.]', tags: ['[LONGEST TOUR] km', '[HARDEST SEND]'] },
   ],
   experience: [
     { start: '[START]', end: '[END]', role: '[ROLE TITLE]', org: '[EMPLOYER]', highlight: '[ONE-LINE HIGHLIGHT]' },
     { start: '[START]', end: '[END]', role: '[ROLE TITLE]', org: '[EMPLOYER]', highlight: '[ONE-LINE HIGHLIGHT]' },
     { start: '[START]', end: 'Now', role: '[ROLE TITLE]', org: '[EMPLOYER]', highlight: '[ONE-LINE HIGHLIGHT]' },
   ],
-  next: { label: 'Next', role: 'Your team?' },
+  next: { label: 'Next', role: 'Your *team?*' },
   projects: [
     // Each project gets a roadside sign in the Work ride, in this order
     { grade: '7a', meta: 'AI product · since 2025', name: 'Ask Ah Mah',
@@ -284,7 +342,29 @@ window.FX = {
   _wake: {},
   wake(name, fn) { this._wake[name] = fn; },
   show(name, on) { if (this[name].on === on) return; this[name].on = on; if (on && this._wake[name]) this._wake[name](); },
+  // Shared canvas resolution: capped below retina, and stepped down if frames run long
+  dpr: Math.min(window.devicePixelRatio || 1, 1.5),
+  _dpr: [],
+  onDpr(fn) { this._dpr.push(fn); },
 };
+(function () {
+  const FX = window.FX, steps = [1.25, 1];
+  let last = 0, slow = 0, n = 0;
+  function tick(now) {
+    const dt = now - last; last = now;
+    // Ignore stalls from hidden tabs or loading; count frames slower than ~45fps
+    if (dt < 100) { n++; if (dt > 22) slow++; }
+    if (n >= 90) {
+      if (slow > 30 && steps.length) {
+        const next = steps.shift();
+        if (next < FX.dpr) { FX.dpr = next; FX._dpr.forEach((fn) => fn(next)); }
+      }
+      n = slow = 0;
+    }
+    if (steps.length) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 (function () {
   const FX = window.FX;
   const $ = (s) => document.querySelector(s);
@@ -294,6 +374,7 @@ window.FX = {
   // Shared state for the HUD; declared up front because ScrollTrigger callbacks fire during setup
   let zone = 'hero', lastLabel = '', h1 = null, h2 = null, h3 = null;
   const R = { max: 1, w: 1, zones: null, stops: [] };
+  const smooth = (x) => x * x * (3 - 2 * x);
   gsap.registerPlugin(ScrollTrigger, SplitText);
 
   // Theme + journey tint: the sky warms from day toward dusk as you go
@@ -301,13 +382,34 @@ window.FX = {
   const effectiveDark = () => { const t = root.getAttribute('data-theme'); return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches; };
   const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const mix = (a, b, t) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
-  let tintT = 0;
+  // Sky: one day across the page. Dawn on the island, noon at the crag, golden hour on the road, quiet paper at the resume.
+  // [top, horizon, sun x %, sun y %, horizon stop %, cloud sea 0..1]
+  const SKY = {
+    light: { hero: ['#a9c9e0', '#f6e6d6', 76, 34, 74, 1], crag: ['#8fbbdc', '#eaf1f1', 22, 20, 74, 1], ride: ['#86a9c8', '#f5d2a6', 64, 44, 46, 0], resume: ['#ece5db', '#f2ebe2', 80, 6, 74, 0] },
+    dark: { hero: ['#0a121c', '#1b2733', 76, 34, 74, 1], crag: ['#0c1622', '#22303a', 22, 20, 74, 1], ride: ['#121729', '#3a2a26', 64, 44, 46, 0], resume: ['#111513', '#161917', 80, 6, 74, 0] },
+  };
   function paintTint() {
-    const c = effectiveDark() ? mix('#0e1411', '#16120f', tintT) : mix('#eceeea', '#f0e3da', tintT);
-    root.style.setProperty('--tint', c);
-    FX.bg = c;
+    const P = SKY[effectiveDark() ? 'dark' : 'light'], z = R.zones, y = window.scrollY;
+    const keys = z ? [[0, 'hero'], [z.h1, 'hero'], [z.c0, 'crag'], [z.c1, 'crag'], [z.r0, 'ride'], [z.r1, 'ride'], [R.max, 'resume']] : [[0, 'hero']];
+    let i = 0;
+    while (i < keys.length - 1 && y > keys[i + 1][0]) i++;
+    const [y0, k0] = keys[i], [y1, k1] = keys[Math.min(i + 1, keys.length - 1)];
+    const t = y1 > y0 ? smooth(Math.min(Math.max((y - y0) / (y1 - y0), 0), 1)) : 0, A = P[k0], B = P[k1], n = (j) => A[j] + (B[j] - A[j]) * t;
+    const top = mix(A[0], B[0], t), bot = mix(A[1], B[1], t);
+    put('--sky-top', top);
+    put('--sky-bot', bot);
+    put('--tint', bot);
+    put('--sun-x', n(2).toFixed(1) + 'vw');
+    put('--sun-y', n(3).toFixed(1) + 'vh');
+    put('--sky-stop', n(4).toFixed(1) + '%');
+    put('--sea', n(5).toFixed(2));
+    FX.bg = bot;
   }
-  function syncTheme() { themeBtn.textContent = effectiveDark() ? 'Light' : 'Dark'; paintTint(); }
+  // Every root var write restyles the page, so skip the ones that did not move
+  const painted = {};
+  function put(k, v) { if (painted[k] !== v) { painted[k] = v; root.style.setProperty(k, v); } }
+  let paintClouds = null;
+  function syncTheme() { const t = effectiveDark() ? 'Light' : 'Dark'; themeBtn.textContent = t; themeBtn.setAttribute('aria-label', 'Switch to ' + t.toLowerCase() + ' theme'); paintTint(); if (paintClouds) paintClouds(); }
   try { const saved = localStorage.getItem('theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
   syncTheme();
   themeBtn.addEventListener('click', () => {
@@ -320,21 +422,26 @@ window.FX = {
 
   // Chapters: build every panel's content
   function chapter(html) { const d = document.createElement('div'); d.className = 'ch'; d.innerHTML = html; return d; }
+  // *words* in copy render as the italic accent
+  const em = (s) => esc(s).replace(/\*(.+?)\*/g, '<em>$1</em>'), plain = (s) => String(s).replace(/\*/g, '');
   const tags = (list) => list && list.length ? '<ul class="tags">' + list.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '';
   const heroCh = $('#chapters');
-  SITE.hero.slice(1).forEach((c) => heroCh.appendChild(chapter('<h2>' + esc(c.title) + '</h2><p class="lede">' + esc(c.body) + '</p>' + tags(c.tags) +
-    (c.projects ? '<ul class="plist">' + c.projects.map((pr) => '<li><a href="' + esc(pr.href) + '" target="_blank" rel="noopener"><b>' + esc(pr.name) + ' ↗</b><span class="mono">' + esc(pr.line) + '</span></a></li>').join('') + '</ul>' : ''))));
+  // Hero chapters past the first are visual only; screen readers get the same copy as one list (project links live in #wlist)
+  $('#hlist').innerHTML = SITE.hero.slice(1).map((c) => '<h2>' + esc(plain(c.title)) + '</h2><p>' + esc(c.body) + (c.tags ? ' ' + c.tags.map(esc).join(', ') + '.' : '') + '</p>').join('');
+  SITE.hero.slice(1).forEach((c) => heroCh.appendChild(chapter('<h2>' + em(c.title) + '</h2><p class="lede">' + esc(c.body) + '</p>' + tags(c.tags) +
+    (c.projects ? '<ul class="plist">' + c.projects.map((pr) => '<li><a href="' + esc(pr.href) + '" target="_blank" rel="noopener" tabindex="-1"><b>' + esc(pr.name) + ' ↗</b><span class="mono">' + esc(pr.line) + '</span></a></li>').join('') + '</ul>' : ''))));
 
+  Array.from(heroCh.children).slice(1).forEach((c) => c.setAttribute('aria-hidden', 'true'));
   const xn = SITE.experience.length, xch = $('#xch');
   $('#xlist').innerHTML = SITE.experience.map((e) => '<li>' + esc(e.role) + ', ' + esc(e.org) + ', ' + esc(e.start) + ' to ' + esc(e.end) + '. ' + esc(e.highlight) + '</li>').join('');
-  xch.appendChild(chapter('<h3>Experience</h3><p class="lede">One pitch, one bolt per role, newest at the top. Each clip opens the next role.</p>'));
-  SITE.experience.forEach((e) => xch.appendChild(chapter('<span class="mono kicker">' + esc(e.start) + ' - ' + esc(e.end) + '</span><h3>' + esc(e.role) + '</h3><p class="org">' + esc(e.org) + '</p><p class="lede">' + esc(e.highlight) + '</p>')));
-  xch.appendChild(chapter('<h3>' + esc(SITE.next.role) + '</h3><p class="lede">The next pitch is open. The resume has the full details.</p><a class="btn ghost" href="#resume" tabindex="-1">Resume</a>'));
+  xch.appendChild(chapter('<h3>Experience, <em>pitch by pitch.</em></h3><p class="lede">One pitch, one bolt per role, newest at the top. Each clip opens the next role.</p>'));
+  SITE.experience.forEach((e) => xch.appendChild(chapter('<h3>' + esc(e.role) + '</h3><p class="org">' + esc(e.org) + '<span class="mono">' + esc(e.start) + '–' + esc(e.end) + '</span></p><p class="lede">' + esc(e.highlight) + '</p>')));
+  xch.appendChild(chapter('<h3>' + em(SITE.next.role) + '</h3><p class="lede">The next pitch is open. The resume has the full details.</p><a class="btn ghost" href="#resume" tabindex="-1">Resume</a>'));
 
   const wn = SITE.projects.length, wch = $('#wch');
   $('#wlist').innerHTML = SITE.projects.map((p) => '<li><a href="' + esc(p.href) + '" target="_blank" rel="noopener">' + esc(p.name) + '</a>, ' + esc(p.meta) + '. ' + esc(p.blurb) + ' ' + esc(p.stack) + '.</li>').join('');
-  wch.appendChild(chapter('<h3>Work</h3><p class="lede">Side projects, graded like routes: harder grade, harder problem. Both are live.</p>'));
-  SITE.projects.forEach((p) => wch.appendChild(chapter('<span class="mono kicker">' + esc(p.meta) + '</span><h3>' + esc(p.name) + '</h3><p class="lede">' + esc(p.blurb) + '</p>' +
+  wch.appendChild(chapter('<h3>Work, <em>on the road.</em></h3><p class="lede">Side projects, graded like routes: harder grade, harder problem. Both are live.</p>'));
+  SITE.projects.forEach((p) => wch.appendChild(chapter('<h3>' + esc(p.name) + '</h3><p class="org">' + esc(p.meta) + '</p><p class="lede">' + esc(p.blurb) + '</p>' +
     '<span class="mono stack">' + esc(p.stack) + (p.facts ? '<br>' + esc(p.facts) : '') + '</span><a class="btn" href="' + esc(p.href) + '" target="_blank" rel="noopener" tabindex="-1">Visit site ↗</a>')));
 
   // Contacts
@@ -347,7 +454,7 @@ window.FX = {
   document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => {
     const el = document.getElementById('cv' + b.dataset.copy);
     const done = () => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1600); };
-    navigator.clipboard.writeText(el.textContent).then(done, () => { const s = window.getSelection(), r = document.createRange(); r.selectNodeContents(el); s.removeAllRanges(); s.addRange(r); });
+    navigator.clipboard.writeText(el.textContent).then(done, () => { const s = window.getSelection(), r = document.createRange(); r.selectNodeContents(el); s.removeAllRanges(); s.addRange(r); b.textContent = 'Selected'; setTimeout(() => { b.textContent = 'Copy'; }, 1600); });
   }));
 
   // Headlines and ledes split into masked lines, so chapters can rise in line by line
@@ -401,7 +508,7 @@ window.FX = {
       stops: (start, span) => labels.map((label, i) => ({ s: start + (i ? (i - 0.1) / N : 0) * span, label })) };
     return st;
   }
-  const crag = stepped($('#experience'), xch, ['Experience'].concat(SITE.experience.map((e) => e.org), [SITE.next.role]));
+  const crag = stepped($('#experience'), xch, ['Experience'].concat(SITE.experience.map((e) => e.org), [plain(SITE.next.role)]));
   const ride = stepped($('#work'), wch, ['Work'].concat(SITE.projects.map((p) => p.name)));
   window.climbAt = crag.at;
   window.rideAt = ride.at;
@@ -426,6 +533,12 @@ window.FX = {
     if (id !== 'top' && !el) return;
     e.preventDefault();
     go(el ? startOf(el) + (id === 'resume' ? 0 : 2) : 0);
+    if (id === 'resume') el.focus({ preventScroll: true });
+  });
+  // Tabbing through the project list rides the scene to that project's stop
+  $('#wlist').addEventListener('focusin', (e) => {
+    const li = e.target.closest('li'), i = Array.prototype.indexOf.call(li.parentNode.children, li);
+    go(ride.stops(startOf(secs.work), spanOf(secs.work))[i + 1].s + 2);
   });
 
   // Section progress -> FX + chapters
@@ -434,6 +547,7 @@ window.FX = {
   function heroStep(dir) {
     let i = 0;
     SITE.hero.forEach((c, j) => { if (FX.hero.p >= c.p) i = j; });
+    FX.hero.idx = i;
     if (i !== heroIdx) { heroIdx = i; heroSwap(i, dir); }
   }
   ScrollTrigger.create({ trigger: secs.experience, start: 'top top', end: 'bottom bottom',
@@ -442,22 +556,55 @@ window.FX = {
     onUpdate: (s) => { FX.ride.p = s.progress; ride.update(s.progress, s.direction); hud(); }, onRefresh: (s) => { FX.ride.p = s.progress; ride.update(s.progress, 1); } });
 
   // ---- Handoffs: scrubbed across the scroll between two sections ----
-  const smooth = (x) => x * x * (3 - 2 * x);
   gsap.set('#lhero', { autoAlpha: 1 });
   gsap.set(['#lcrag', '#lride', '#pcrag', '#pride'], { autoAlpha: 0 });
   if (reduce) { FX.crag.in = 1; FX.ride.in = 1; }
 
-  // Jagged top and bottom edge for the rock band
-  (function () {
+  // Clouds are painted, not modelled: stacks of soft radial puffs, a lit one over a shaded one for volume
+  // Colours are baked in per theme: a live var here would re-raster every cloud layer on each scroll frame
+  paintClouds = function () {
     let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    const top = [], bot = [];
-    for (let i = 0; i <= 24; i++) { const x = (i / 24 * 100).toFixed(2); top.push(x + '% ' + (r() * 7).toFixed(2) + '%'); bot.unshift(x + '% ' + (93 + r() * 7).toFixed(2) + '%'); }
-    $('#wipe').style.clipPath = 'polygon(' + top.concat(bot).join(',') + ')';
-  })();
+    const dark = effectiveDark(), sky = SKY[dark ? 'dark' : 'light'].hero[0];
+    const lit = dark ? '#2a3540' : '#fbf7f1', shade = mix(lit, sky, 0.18);
+    const puff = (c, w, h, x, y) => 'radial-gradient(' + w + ' ' + h + ' at ' + x + ' ' + y + ', ' + c + ' 0 55%, transparent 100%)';
+    // Bank: puffy top and bottom edges, solid between, tall enough to cover the screen mid-dive
+    const hi = [], lo = [];
+    for (let i = 0; i <= 18; i++) {
+      const x = (i / 18 * 100 + (r() - 0.5) * 4).toFixed(1) + '%', w = (9 + r() * 9).toFixed(1) + 'vw', h = (7 + r() * 8).toFixed(1) + 'vh';
+      const yt = (14 + r() * 8).toFixed(1), yb = (14 + r() * 8).toFixed(1);
+      hi.push(puff(lit, w, h, x, yt + 'vh'), puff(lit, w, h, x, 'calc(100% - ' + yb + 'vh)'));
+      lo.push(puff(shade, w, h, x, (+yt + 2.4) + 'vh'), puff(shade, w, h, x, 'calc(100% - ' + (yb - 2.4) + 'vh)'));
+    }
+    // Inside the bank: soft billows drifting past, so the dive never reads as a blank screen
+    const mid = [], deep = mix(lit, sky, 0.12);
+    // Billows sit on their own layer that outruns the bank, which is what sells the speed of the dive
+    for (let i = 0; i < 22; i++) {
+      const x = r() * 100, y = 8 + r() * 84, w = 12 + r() * 16, h = 7 + r() * 10;
+      mid.push(puff(lit, w.toFixed(1) + 'vw', h.toFixed(1) + 'vh', x.toFixed(1) + '%', y.toFixed(1) + '%'),
+        puff(deep, w.toFixed(1) + 'vw', h.toFixed(1) + 'vh', x.toFixed(1) + '%', 'calc(' + y.toFixed(1) + '% + ' + (h * 0.45).toFixed(1) + 'vh)'));
+    }
+    const fill = 'linear-gradient(transparent 19vh, ' + lit + ' 24vh, ' + lit + ' calc(100% - 24vh), transparent calc(100% - 19vh))';
+    const bank = hi.concat(fill, lo).join(',');
+    $('#wipe').style.backgroundImage = bank;
+    $('#wipe2').style.backgroundImage = bank;
+    document.querySelectorAll('.billow').forEach((b) => { b.style.backgroundImage = mid.join(','); });
+    // Sea: a 2-wide strip of puffs that repeats at its halfway point, so the drift loops without a seam
+    function sea(el, n, base) {
+      const a = [], b = [];
+      for (let i = 0; i < n; i++) {
+        const x = i / n * 50 + r() * 2, w = (6 + r() * 10).toFixed(1) + 'vw', h = (8 + r() * 16).toFixed(1) + '%', y = 36 + r() * 46;
+        [x, x + 50].forEach((xx) => { a.push(puff(lit, w, h, xx.toFixed(1) + '%', y.toFixed(1) + '%')); b.push(puff(shade, w, h, xx.toFixed(1) + '%', (y + 6).toFixed(1) + '%')); });
+      }
+      el.style.backgroundImage = a.concat('linear-gradient(transparent ' + base + '%, ' + lit + ' 96%)', b).join(',');
+    }
+    sea($('#seab'), 14, 50);
+    sea($('#seaf'), 11, 62);
+  };
+  paintClouds();
 
   const hand = (trigger, endTrigger) => ({ trigger, start: 'bottom bottom', endTrigger, end: 'top top', scrub: true, invalidateOnRefresh: true, onUpdate: sync, onRefresh: sync });
 
-  // 1. Island -> crag: the camera dives into the island, a rock band sweeps up the screen, the crag is waiting behind it
+  // 1. Island -> crag: the camera dives down through the cloud sea; the crag's island is waiting under it
   h1 = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: hand(secs.stage, secs.experience) });
   h1.to('#phero', { yPercent: -16, autoAlpha: 0, duration: 0.32, ease: 'power2.in' }, 0);
   if (reduce) {
@@ -465,26 +612,29 @@ window.FX = {
   } else {
     h1.to(FX.hero, { out: 1, duration: 0.6, ease: 'power2.in' }, 0)
       .to('#vhero', { scale: 1.1, duration: 0.6, ease: 'power2.in' }, 0)
-      .fromTo('#wipe', { y: () => window.innerHeight, autoAlpha: 1 }, { y: () => -$('#wipe').offsetHeight, duration: 0.72 }, 0.2)
+      .fromTo('#wipe', { y: () => window.innerHeight, autoAlpha: 1 }, { y: () => -$('#wipe').offsetHeight, duration: 0.72, ease: 'sine.inOut' }, 0.2)
+      .fromTo('#wipe .billow', { yPercent: 30 }, { yPercent: -30, duration: 0.72, ease: 'sine.inOut' }, 0.2)
       .set('#lhero', { autoAlpha: 0 }, 0.55).set('#lcrag', { autoAlpha: 1 }, 0.55)
       .to(FX.crag, { in: 1, duration: 0.45, ease: 'power2.out' }, 0.55);
   }
   h1.fromTo('#pcrag', { autoAlpha: 0, yPercent: 12, clipPath: 'inset(0% 0% 100% 0%)' }, { autoAlpha: 1, yPercent: 0, clipPath: 'inset(0% 0% 0% 0%)', duration: 0.28, ease: 'power3.out' }, 0.72);
 
-  // 2. Crag -> ride: top out and look up into open sky; the ride starts in that same sky and tilts down to the road
+  // 2. Crag -> ride: top out and look up; a cloud bank rolls down past, and the ride tilts down out of it to the road
   h2 = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: hand(secs.experience, secs.work) });
   h2.to('#pcrag', { yPercent: -14, autoAlpha: 0, duration: 0.3, ease: 'power2.in' }, 0);
   if (reduce) {
     h2.to('#lcrag', { autoAlpha: 0, duration: 0.3 }, 0.3).to('#lride', { autoAlpha: 1, duration: 0.3 }, 0.4);
   } else {
     h2.to(FX.crag, { out: 1, duration: 0.5, ease: 'power2.inOut' }, 0)
-      .to('#lcrag', { autoAlpha: 0, duration: 0.08 }, 0.44)
-      .to('#lride', { autoAlpha: 1, duration: 0.08 }, 0.46)
+      .fromTo('#wipe2', { y: () => -$('#wipe2').offsetHeight, autoAlpha: 1 }, { y: () => window.innerHeight, duration: 0.7, ease: 'sine.inOut' }, 0.15)
+      .fromTo('#wipe2 .billow', { yPercent: -30 }, { yPercent: 30, duration: 0.7, ease: 'sine.inOut' }, 0.15)
+      .set('#lcrag', { autoAlpha: 0 }, 0.5)
+      .set('#lride', { autoAlpha: 1 }, 0.5)
       .to(FX.ride, { in: 1, duration: 0.5, ease: 'power2.inOut' }, 0.5);
   }
   h2.fromTo('#pride', { autoAlpha: 0, yPercent: 14, clipPath: 'inset(0% 0% 100% 0%)' }, { autoAlpha: 1, yPercent: 0, clipPath: 'inset(0% 0% 0% 0%)', duration: 0.25, ease: 'power3.out' }, 0.75);
 
-  // 3. Ride -> resume: pull over; the view shrinks into a postcard beside the resume
+  // 3. Ride -> resume: pull over; the view shrinks into a postcard (border, shadow, postmark) beside the resume
   const slotBox = () => {
     const r = $('#slot').getBoundingClientRect(), q = secs.resume.getBoundingClientRect();
     return { x: r.left, y: r.top - q.top, s: r.width / Math.max($('#vride').offsetWidth, 1) };
@@ -494,7 +644,8 @@ window.FX = {
     .to('#scrim', { autoAlpha: 0, duration: 0.4 }, 0)
     .to('#route', { autoAlpha: 0, duration: 0.25 }, 0.55);
   if (reduce) h3.to('#lride', { autoAlpha: 0, duration: 0.4 }, 0.3);
-  else h3.to('#vride', { x: () => slotBox().x, y: () => slotBox().y, scale: () => slotBox().s, duration: 0.85, ease: 'power2.inOut' }, 0.15);
+  else h3.to('#vride', { x: () => slotBox().x, y: () => slotBox().y, scale: () => slotBox().s, rotation: -2.2, duration: 0.85, ease: 'power2.inOut' }, 0.15)
+    .fromTo('#vride', { '--pc': 0 }, { '--pc': 1, duration: 0.5, ease: 'power2.out' }, 0.5);
   // Once landed, the postcard scrolls with the resume if the resume is taller than the screen
   gsap.to('#lride', { y: () => -Math.max(secs.resume.offsetHeight - window.innerHeight, 0), ease: 'none',
     scrollTrigger: { trigger: secs.resume, start: 'top top', end: 'bottom bottom', scrub: true, invalidateOnRefresh: true } });
@@ -514,6 +665,8 @@ window.FX = {
     FX.show('crag', a > 0.45 && b < 0.5);
     FX.show('ride', b > 0.4);
     zone = c > 0.6 ? 'resume' : b > 0.47 ? 'ride' : a > 0.55 ? 'crag' : 'hero';
+    if (document.body.dataset.zone !== zone) document.body.dataset.zone = zone;
+    $('#nav').classList.toggle('solid', c > 0.9);
     hud();
   }
 
@@ -538,7 +691,7 @@ window.FX = {
       .concat(crag.stops(startOf(X), spanOf(X)), ride.stops(startOf(W), spanOf(W)), [{ s: R.max, label: 'Resume' }]);
     let d = '';
     for (let i = 0; i <= 240; i++) { const s = i / 240 * R.max; d += (i ? 'L' : 'M') + (i / 240 * 1000).toFixed(1) + ' ' + ((1 - elev(s)) * 36).toFixed(2); }
-    $('#rbase').setAttribute('d', d); $('#rdone').setAttribute('d', d);
+    $('#rbase').setAttribute('d', d); $('#rdone').setAttribute('d', d); $('#rfill').setAttribute('d', d + 'L1000 36L0 36Z');
     ticksEl.innerHTML = '';
     R.stops.forEach((st) => {
       const b = document.createElement('button');
@@ -548,7 +701,7 @@ window.FX = {
       ticksEl.appendChild(b);
       st.el = b;
     });
-    hud();
+    paintTint(); hud();
   }
   ScrollTrigger.addEventListener('refresh', layoutRoute);
 
@@ -576,7 +729,7 @@ window.FX = {
   }
 
   // One tracker for the whole page: tint and route
-  ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (s) => { tintT = s.progress; paintTint(); hud(); } });
+  ScrollTrigger.create({ start: 0, end: 'max', onUpdate: () => { paintTint(); hud(); } });
 
   // Entrance: the first headline rises in line by line
   if (!reduce && window.scrollY < 10) {
@@ -643,7 +796,7 @@ const CLAY = !window.THREE ? null : (function () {
     const sun = new THREE.DirectionalLight(0xfff0e0, 0.85);
     if (shadowSize) {
       sun.castShadow = true;
-      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.mapSize.set(1024, 1024);
       Object.assign(sun.shadow.camera, { left: -shadowSize, right: shadowSize, top: shadowSize, bottom: -shadowSize, near: 1, far: 40 });
       sun.shadow.bias = -0.0005; sun.shadow.radius = 3;
     }
@@ -755,7 +908,7 @@ const CLAY = !window.THREE ? null : (function () {
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { fallback('3D preview needs WebGL.'); return; }
   const small = window.matchMedia('(max-width: 900px)').matches;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
+  renderer.setPixelRatio(window.FX.dpr); window.FX.onDpr((r) => { renderer.setPixelRatio(r); resize(); });
   renderer.shadowMap.enabled = !small;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -1207,7 +1360,7 @@ const CLAY = !window.THREE ? null : (function () {
   const hemi = new THREE.HemisphereLight(0xf4f1ea, 0x6f7c6a, 0.55);
   const sun = new THREE.DirectionalLight(0xfff0e0, 0.85);
   sun.position.set(6, 11, 5); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(1024, 1024);
   Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 40 });
   sun.shadow.bias = -0.0005; sun.shadow.radius = 3;
   const amb = new THREE.AmbientLight(0xffffff, 0.06);
@@ -1354,6 +1507,8 @@ const CLAY = !window.THREE ? null : (function () {
     // Only the latest reached checkpoint keeps its label
     let curCp = -1;
     flags.forEach((f, i) => { if (cur >= f.t - 0.004) curCp = i; });
+    if (FX.idx != null) curCp = Math.min(curCp, FX.idx); // the chip never runs ahead of the copy
+
     flags.forEach((f, i) => {
       const want = i <= curCp ? 1 : 0;
       if (still) { f.s = want; f.v = 0; }
@@ -1405,7 +1560,7 @@ const CLAY = !window.THREE ? null : (function () {
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { return; }
   const { V, rng, mat, shadowy, bar, limb, lights } = CLAY;
   const small = window.matchMedia('(max-width: 900px)').matches;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
+  renderer.setPixelRatio(window.FX.dpr); window.FX.onDpr((r) => { renderer.setPixelRatio(r); resize(); });
   renderer.shadowMap.enabled = !small;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
@@ -1540,7 +1695,7 @@ const CLAY = !window.THREE ? null : (function () {
     world.add(g);
     const el = document.createElement('div');
     el.className = 'cp side';
-    el.innerHTML = anchor ? '<b>' + esc(SITE.next.label) + '</b> ' + esc(SITE.next.role) : '<b>' + (k < 9 ? '0' : '') + (k + 1) + '</b> ' + esc(roles[k].org);
+    el.innerHTML = anchor ? '<b>' + esc(SITE.next.label) + '</b> ' + esc(SITE.next.role.replace(/\*/g, '')) : '<b>' + (k < 9 ? '0' : '') + (k + 1) + '</b> ' + esc(roles[k].org);
     wrap.appendChild(el);
     return { g, qd, y, clip: y - 0.32, s: 0, v: 0, el, ropeAt: V(0, (anchor ? -0.17 : -0.03) - 0.19, 0.03), w: V(0, 0, 0) };
   });
@@ -1812,18 +1967,20 @@ const CLAY = !window.THREE ? null : (function () {
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { return; }
   const { V, rng, mat, bar, lights, onTheme } = CLAY;
   const small = window.matchMedia('(max-width: 900px)').matches;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
+  renderer.setPixelRatio(window.FX.dpr); window.FX.onDpr((r) => { renderer.setPixelRatio(r); resize(); });
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(62, 1, 0.03, 900);
   scene.add(camera);
-  lights(scene, 0);
+  // Golden hour on the road: warmer key and sky fill than the shared rig
+  const rig = lights(scene, 0);
+  onTheme((dark) => { if (!dark) { rig.sun.color.set(0xffd6a6); rig.sun.intensity = 0.95; rig.hemi.color.set(0xf7e4cc); } });
   // Fog fades into the page itself, so the far valley dissolves rather than ending
   const fog = new THREE.Fog(0xeceeea, 60, 560);
   scene.fog = fog;
   const C = {
     grass: 0x8ea67c, grass2: 0x7d9a6d, rock: 0x8497ad, rockLow: 0x5b6d83, snow: 0xf5f7f8,
     road: 0xc9b38c, verge: 0x9e9270, pine: 0x4a7654, trunk: 0x6b4d36, wood: 0x8a6a4e, boulder: 0x9aa39a,
-    bike: 0xc04a18, ink: 0x131c17, grip: 0x2b312d, bag: 0xc8955a, bagDark: 0x9c6f3e, skin: 0xd8ae8a, shirt: 0x2f4a3a, post: 0xf1efe8,
+    bike: 0xc04a18, ink: 0x131c17, grip: 0x2b312d, bag: 0x7d5434, bagDark: 0x5c3c24, skin: 0xd8ae8a, shirt: 0x2f4a3a, post: 0xf1efe8,
   };
   const up = V(0, 1, 0), clamp = (x, a, b) => Math.min(Math.max(x, a), b);
   const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -1990,6 +2147,8 @@ const CLAY = !window.THREE ? null : (function () {
     const rnd = rng(23), list = [];
     for (let n = 0; n < 34; n++) {
       const s = S0 - 6 + rnd() * (L - S0), side = rnd() < 0.5 ? -1 : 1, off = 6 + Math.pow(rnd(), 1.5) * 70;
+      // Keep the opening view clear: no giant trunks right beside the start line
+      if (s < S0 + 40 && off < 18) continue;
       const k = 2 + Math.floor(rnd() * 4);
       for (let t = 0; t < k; t++) {
         P(s, pv); sideOf(s, rv);
