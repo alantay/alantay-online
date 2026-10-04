@@ -2,148 +2,153 @@
 <title>Alan Tay Portfolio</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: fixed nav; sticky split 3D hero; Experience as sticky 3D sport crag (bolt per role); Work as a first-person ride past one roadside sign per project; plain resume + contact */
+/* Layout: one fixed stage holds all three 3D scenes (island, crag, ride); the page scroll only drives it.
+   GSAP scrubs the handoffs between scenes; copy lives in a fixed HUD; one route line tracks the whole journey. */
 :root {
   --bg: #eceeea;
-  --surface: #e4e7e2;
+  --tint: #eceeea;
   --ink: #131c17;
   --muted: #46524a;
-  --rule: #d3d8d2;
-  --fill: #dfe3dd;
+  --rule: #cdd3cc;
   --accent: #c04a18;
   --accent-text: #c04a18;
   --on-accent: #ffffff;
-  --topo: #c5cdc5;
+  --rock: #a9b0a6;
+  --rock2: #949c91;
   --display: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --gutter: clamp(16px, 4.4vw, 64px);
+  --nav-h: 64px;
+  --route-h: 76px;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #0e1411; --surface: #141c18; --ink: #e6e9e4; --muted: #a2aca5; --rule: #25302a; --fill: #16201b; --accent-text: #e0652f; --topo: #2a3631; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --bg: #0e1411; --tint: #0e1411; --ink: #e6e9e4; --muted: #a2aca5; --rule: #2a352f; --accent-text: #e0652f; --rock: #2b332e; --rock2: #232a26; color-scheme: dark; }
 }
-:root[data-theme="dark"] { --bg: #0e1411; --surface: #141c18; --ink: #e6e9e4; --muted: #a2aca5; --rule: #25302a; --fill: #16201b; --accent-text: #e0652f; --topo: #2a3631; color-scheme: dark; }
+:root[data-theme="dark"] { --bg: #0e1411; --tint: #0e1411; --ink: #e6e9e4; --muted: #a2aca5; --rule: #2a352f; --accent-text: #e0652f; --rock: #2b332e; --rock2: #232a26; color-scheme: dark; }
 
-html { scroll-behavior: smooth; scroll-padding-top: 72px; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-body { background: var(--bg); color: var(--ink); font-family: var(--display); font-size: 16px; line-height: 1.5; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-stopped { overflow: clip; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--display); font-size: 16px; line-height: 1.5; }
 a { color: inherit; text-decoration: none; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 3px; }
 h1, h2, h3 { text-wrap: balance; }
 .mono { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-/* Nav */
-.nav {
-  position: fixed; left: 0; right: 0; top: 0; z-index: 10;
-  padding-top: env(safe-area-inset-top, 0px);
-  background: var(--bg); border-bottom: 1px solid transparent; transition: border-color 200ms ease;
-}
-.nav.scrolled { border-bottom-color: var(--rule); }
-.nav-in { height: 64px; padding-inline: var(--gutter); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+/* Nav floats over the stage */
+.nav { position: fixed; left: 0; right: 0; top: 0; z-index: 10; padding-top: env(safe-area-inset-top, 0px); }
+.nav-in { height: var(--nav-h); padding-inline: var(--gutter); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .brand { font-weight: 600; font-size: 18px; }
 .links { display: flex; align-items: center; gap: 28px; font-size: 15px; color: var(--muted); }
 .links a:hover { color: var(--ink); }
 .theme { height: 36px; padding: 0 12px; border: 1px solid var(--rule); background: transparent; color: var(--ink); font: 500 12px var(--mono); cursor: pointer; border-radius: 0; }
-
-/* Hero */
-.stage { position: relative; height: 540vh; }
-.sticky {
-  position: sticky; top: 0; height: 100vh; height: 100dvh; box-sizing: border-box;
-  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: minmax(0, 1fr); align-items: center; gap: 24px;
-  padding-inline: var(--gutter); padding-top: 64px; overflow: hidden;
-}
-.copy { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; min-width: 0; }
-h1 { margin: 0; font-size: clamp(40px, 4.6vw, 66px); line-height: 1.04; letter-spacing: -0.035em; font-weight: 600; }
-.lede { margin: 0; max-width: 34ch; font-size: 19px; color: var(--muted); }
 .btn { height: 52px; padding: 0 26px; display: inline-flex; align-items: center; gap: 10px; background: var(--accent); color: var(--on-accent); font-weight: 500; transition: transform 120ms ease; white-space: nowrap; }
 .btn:active { transform: translateY(1px); }
 .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
-.readout { display: flex; flex-wrap: wrap; gap: 8px 20px; border-top: 1px solid var(--rule); padding-top: 14px; }
-.readout b { color: var(--ink); font-weight: 500; }
 
-/* Hero chapters: one per checkpoint, stacked in one grid cell */
-.chapters { display: grid; width: 100%; }
-.ch {
-  grid-area: 1 / 1; display: flex; flex-direction: column; align-items: flex-start; gap: 18px;
-  transition: opacity 300ms ease, transform 400ms cubic-bezier(.2,.7,.2,1), visibility 0s linear 400ms;
-}
-.ch.on { transition: opacity 350ms ease 150ms, transform 450ms cubic-bezier(.2,.7,.2,1) 150ms, visibility 0s; }
-.ch:not(.on) { opacity: 0; transform: translateY(14px); visibility: hidden; pointer-events: none; }
-.ch h2, .ch h3 { margin: 0; font-size: clamp(34px, 3.8vw, 54px); line-height: 1.06; letter-spacing: -0.03em; font-weight: 600; }
-.kicker { color: var(--accent-text); letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
-.tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.tags li { border: 1px solid var(--rule); padding: 5px 10px; font: 12px var(--mono); color: var(--ink); transition: opacity 300ms ease, transform 300ms ease; transition-delay: calc(250ms + var(--i, 0) * 60ms); }
-.ch:not(.on) .tags li { opacity: 0; transform: translateY(6px); transition-delay: 0s; }
-.plist { margin: 0; padding: 0; list-style: none; width: 100%; max-width: 460px; border-top: 1px solid var(--rule); }
-.plist li { border-bottom: 1px solid var(--rule); transition: opacity 300ms ease, transform 300ms ease; transition-delay: calc(250ms + var(--i, 0) * 80ms); }
-.ch:not(.on) .plist li { opacity: 0; transform: translateY(6px); transition-delay: 0s; }
-.plist a { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; }
-.plist b { font-weight: 600; font-size: 17px; }
-.plist a:hover b { color: var(--accent-text); }
-.steps { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; width: 100%; max-width: 460px; }
-.steps li { flex: 1; min-width: 0; }
-.steps button {
-  width: 100%; padding: 8px 0 0; background: none; border: 0; border-top: 2px solid var(--rule); border-radius: 0;
-  text-align: left; color: var(--muted); font: 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase;
-  cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: border-color 250ms ease, color 250ms ease;
-}
-.steps button.done { border-top-color: var(--accent-text); }
-.steps button.cur, .steps button:hover { color: var(--ink); }
+/* Stage: fixed, full viewport. Each layer is one scene; the view box sets where its canvas sits */
+.stage-fx { position: fixed; inset: 0; z-index: 0; background: var(--tint); overflow: hidden; }
+.layer { position: absolute; inset: 0; }
+.layer.crag, .layer.ride { visibility: hidden; opacity: 0; }
+.view { position: absolute; }
+.view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hero .view { top: var(--nav-h); bottom: var(--route-h); left: 40%; right: var(--gutter); }
+.crag .view { top: var(--nav-h); bottom: var(--route-h); left: var(--gutter); right: 42%; }
+.ride .view { inset: 0; transform-origin: 0 0; outline: 1px solid var(--rule); outline-offset: -1px; }
+.scrim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 95% at 0% 100%, var(--tint) 22%, transparent 62%); }
+/* Rock band that sweeps up the screen between island and crag */
+.wipe { position: absolute; left: 0; right: 0; top: 0; height: 170vh; visibility: hidden; will-change: transform;
+  background: repeating-linear-gradient(174deg, var(--rock) 0 54px, var(--rock2) 54px 60px, var(--rock) 60px 130px, var(--rock2) 130px 133px); }
+.fallback { position: absolute; inset: 0; display: grid; place-items: center; }
 .cp {
   position: absolute; left: 0; top: 0; transform: translate(-50%, calc(-100% - 6px)); pointer-events: none;
-  padding: 4px 8px; background: var(--bg); border: 1px solid var(--rule); font: 11px var(--mono); color: var(--ink); white-space: nowrap;
+  padding: 4px 8px; background: var(--tint); border: 1px solid var(--rule); font: 11px var(--mono); color: var(--ink); white-space: nowrap;
   opacity: 0; transition: opacity 250ms ease;
 }
 .cp.on { opacity: 1; }
 .cp b { color: var(--accent-text); font-weight: 500; }
 .cp.below { transform: translate(-50%, 8px); }
 .cp.side { transform: translate(12px, -50%); }
-.scene-wrap { position: relative; height: 100%; min-width: 0; }
-.scene-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-.hint { position: absolute; right: 0; bottom: 28px; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
-.fallback { position: absolute; inset: 0; display: grid; place-items: center; }
 
-/* Sections */
-.section { padding-block: 120px; padding-inline: var(--gutter); border-top: 1px solid var(--rule); }
-.head { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: end; margin-bottom: 56px; }
-.head h2 { margin: 0; font-size: clamp(36px, 3.6vw, 52px); letter-spacing: -0.03em; font-weight: 600; line-height: 1.05; }
-.head p { margin: 0; max-width: 52ch; color: var(--muted); font-size: 17px; }
-
-/* Experience: sticky crag, one chapter per bolt (role) */
-.climb { position: relative; height: 480vh; border-top: 1px solid var(--rule); }
+/* HUD: copy panels and the route line, fixed above the stage */
+.hud { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+.hud a, .hud button { pointer-events: auto; }
+.panel { position: absolute; top: var(--nav-h); bottom: var(--route-h); width: min(36vw, 540px); display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 26px; }
+.panel.hero { left: var(--gutter); }
+.panel.crag { right: var(--gutter); visibility: hidden; }
+.panel.ride { left: var(--gutter); top: auto; bottom: calc(var(--route-h) + 28px); width: min(40vw, 540px); visibility: hidden; }
+.chapters { display: grid; width: 100%; }
+.ch { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; min-width: 0; }
+.ch:not(.on) { visibility: hidden; }
+h1 { margin: 0; font-size: clamp(40px, 4.6vw, 68px); line-height: 1.04; letter-spacing: -0.035em; font-weight: 600; }
+.ch h2, .ch h3 { margin: 0; font-size: clamp(34px, 3.8vw, 56px); line-height: 1.06; letter-spacing: -0.03em; font-weight: 600; }
+.lede { margin: 0; max-width: 36ch; font-size: 19px; color: var(--muted); }
+.kicker { color: var(--accent-text); letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
 .ch .org { margin: 0; font-size: 19px; font-weight: 500; }
-
-/* Work: sticky first-person ride, one chapter per roadside sign (project) */
-.ride { position: relative; height: 310vh; border-top: 1px solid var(--rule); }
 .ch .stack { max-width: 46ch; line-height: 1.7; }
-.ride .scene-wrap canvas { -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent); }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.tags li { border: 1px solid var(--rule); padding: 5px 10px; font: 12px var(--mono); color: var(--ink); }
+.plist { margin: 0; padding: 0; list-style: none; width: 100%; max-width: 460px; border-top: 1px solid var(--rule); }
+.plist li { border-bottom: 1px solid var(--rule); }
+.plist a { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; }
+.plist b { font-weight: 600; font-size: 17px; }
+.plist a:hover b { color: var(--accent-text); }
+.ln-mask { padding-bottom: 0.06em; margin-bottom: -0.06em; }
 
-/* Resume + contact */
-.contact { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; }
-.actions { display: flex; flex-wrap: wrap; gap: 12px; }
-.rows { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
-.rows li { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding-block: 16px; border-bottom: 1px solid var(--rule); }
+/* Route: one elevation profile for the whole page. Ticks jump to each stop */
+.route { position: absolute; left: var(--gutter); right: var(--gutter); bottom: env(safe-area-inset-bottom, 0px); height: var(--route-h); }
+.route svg { position: absolute; left: 0; top: 18px; width: 100%; height: 36px; overflow: visible; }
+.route path { fill: none; stroke: var(--rule); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.route path.done { stroke: var(--accent-text); stroke-width: 2; }
+.ticks { position: absolute; left: 0; right: 0; top: 52px; height: 20px; }
+.ticks button { position: absolute; top: 0; width: 22px; height: 20px; margin-left: -11px; padding: 0; background: none; border: 0; cursor: pointer; }
+.ticks button::after { content: ''; position: absolute; left: 50%; top: 4px; width: 1px; height: 8px; background: var(--muted); transition: background 200ms ease, height 200ms ease; }
+.ticks button.done::after { background: var(--accent-text); }
+.ticks button:hover::after { height: 12px; background: var(--ink); }
+.dot { position: absolute; left: 0; top: 0; width: 8px; height: 8px; margin: -4px 0 0 -4px; background: var(--accent); }
+.here { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); margin-top: -10px; white-space: nowrap; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); }
+.readout { position: absolute; right: 0; bottom: calc(100% + 6px); display: flex; gap: 20px; }
+.readout b { color: var(--ink); font-weight: 500; }
+
+/* Scroll spacers: the sections only give the stage scroll length */
+.spacer { position: relative; pointer-events: none; }
+#stage { height: 540vh; }
+.gap { height: 60vh; pointer-events: none; }
+
+/* Resume: real flow content; the ride lands in the slot as a postcard */
+.resume {
+  position: relative; z-index: 4; box-sizing: border-box; min-height: 100vh; min-height: 100dvh;
+  padding: calc(var(--nav-h) + 56px) var(--gutter) 0;
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: 1fr auto; gap: 40px 56px;
+}
+.resume h2 { margin: 0; font-size: clamp(36px, 3.6vw, 52px); letter-spacing: -0.03em; font-weight: 600; line-height: 1.05; }
+.resume .intro { margin: 16px 0 0; color: var(--muted); font-size: 17px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.slot { grid-column: 2; grid-row: 1; align-self: start; width: 100%; aspect-ratio: var(--va, 16 / 9); }
+.rows { margin: 40px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.rows li { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding-block: 14px; border-bottom: 1px solid var(--rule); }
 .rows .val { overflow-wrap: anywhere; }
 .copybtn { height: 32px; padding: 0 10px; border: 1px solid var(--rule); background: transparent; color: var(--ink); font: 500 12px var(--mono); cursor: pointer; border-radius: 0; }
-.foot { padding-block: 32px; padding-inline: var(--gutter); border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+.foot { grid-column: 1 / -1; padding-block: 28px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
 
 @media (max-width: 900px) {
+  :root { --route-h: 60px; }
   .links .hide-sm { display: none; }
   .links { gap: 16px; }
-  .sticky { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); align-items: start; padding-top: 96px; gap: 8px; }
-  .lede { font-size: 17px; }
-  .copy { gap: 16px; }
+  .hero .view, .crag .view { top: var(--nav-h); bottom: auto; height: 48vh; height: 48dvh; left: 0; right: 0; }
+  .ride .view { bottom: auto; height: 60vh; height: 60dvh; }
+  .scrim { background: linear-gradient(to top, var(--tint) 44%, transparent 64%); }
+  .panel, .panel.hero, .panel.crag, .panel.ride { left: var(--gutter); right: var(--gutter); width: auto; top: auto; bottom: calc(var(--route-h) + 16px); justify-content: flex-end; gap: 16px; }
+  h1 { font-size: 34px; }
+  .ch h2, .ch h3 { font-size: 30px; }
+  .lede { font-size: 16px; }
   .ch { gap: 12px; }
-  .plist a { padding: 8px 0; }
-  .plist .mono { display: none; }
-  .steps .sk { display: none; }
-  .readout { display: none; }
-  .hint { bottom: 16px; }
-  .section { padding-block: 80px; }
-  .head, .contact { grid-template-columns: minmax(0, 1fr); }
-  .head { margin-bottom: 36px; }
   .ch .org { font-size: 17px; }
-  .ch .stack { display: none; }
+  .ch .stack, .plist .mono, .readout { display: none; }
+  .plist a { padding: 8px 0; }
+  .btn { height: 46px; }
+  .resume { grid-template-columns: minmax(0, 1fr); padding-top: calc(var(--nav-h) + 16px); gap: 28px; }
+  .slot { grid-column: 1; width: 56%; justify-self: end; }
   .rows li { grid-template-columns: minmax(0, 1fr) auto; }
   .rows li .k { grid-column: 1 / -1; }
 }
@@ -161,91 +166,66 @@ h1 { margin: 0; font-size: clamp(40px, 4.6vw, 66px); line-height: 1.04; letter-s
   </div>
 </header>
 
-<main id="top">
-  <section class="stage" id="stage">
-    <div class="sticky">
-      <div class="copy">
-        <div class="chapters" id="chapters">
-          <div class="ch on" data-i="0">
-            <span class="mono kicker">CP 01 / Trailhead</span>
-            <h1>Alan Tay builds web products, front to back.</h1>
-            <p class="lede">Frontend and full-stack engineer. Off the clock I'm on a rock face or a loaded touring bike.</p>
-          </div>
-        </div>
-        <a class="btn" href="#work">See work</a>
-        <ol class="steps" id="steps" aria-label="Hero checkpoints"></ol>
-        <div class="readout mono"><span>Dist <b id="km">0.0</b> km</span><span>Climb <b id="climb">+0</b> m</span><span>Grade <b id="grade">2</b>%</span></div>
-      </div>
-      <div class="scene-wrap">
-        <canvas id="scene" aria-hidden="true"></canvas>
-        <div class="hint mono" id="hint">Scroll to ride</div>
-      </div>
-    </div>
-  </section>
+<div class="stage-fx" id="fx" aria-hidden="true">
+  <div class="layer hero" id="lhero"><div class="view" id="vhero"><canvas id="scene"></canvas></div></div>
+  <div class="layer crag" id="lcrag"><div class="view" id="vcrag"><canvas id="crag"></canvas></div></div>
+  <div class="layer ride" id="lride"><div class="view" id="vride"><canvas id="ride"></canvas></div><div class="scrim" id="scrim"></div></div>
+  <div class="wipe" id="wipe"></div>
+</div>
 
-  <section class="climb" id="experience" aria-labelledby="xtitle">
+<main id="top">
+  <div class="hud" id="hud">
+    <div class="panel hero" id="phero">
+      <div class="chapters" id="chapters">
+        <div class="ch on">
+          <h1>Alan Tay builds web products, front to back.</h1>
+          <p class="lede">Frontend and full-stack engineer. Off the clock I'm on a rock face or a loaded touring bike.</p>
+        </div>
+      </div>
+      <a class="btn" href="#work" id="seework">See work</a>
+    </div>
+    <div class="panel crag" id="pcrag" aria-hidden="true"><div class="chapters" id="xch"></div></div>
+    <div class="panel ride" id="pride" aria-hidden="true"><div class="chapters" id="wch"></div></div>
+    <nav class="route" id="route" aria-label="Journey">
+      <div class="readout mono" aria-hidden="true"><span>Dist <b id="rd">0.0</b> km</span><span>Elev <b id="re">+0</b> m</span><span>Grade <b id="rg">2%</b></span></div>
+      <svg viewBox="0 0 1000 36" preserveAspectRatio="none" aria-hidden="true">
+        <defs><clipPath id="rclip"><rect id="rrect" x="-10" y="-20" width="0" height="80"></rect></clipPath></defs>
+        <path id="rbase"></path><path class="done" id="rdone" clip-path="url(#rclip)"></path>
+      </svg>
+      <div class="ticks" id="ticks"></div>
+      <span class="dot" id="rdot"></span><span class="here mono" id="rhere" aria-live="polite"></span>
+    </nav>
+  </div>
+
+  <section class="spacer" id="stage" aria-label="Intro"></section>
+  <div class="gap"></div>
+  <section class="spacer" id="experience" aria-labelledby="xtitle">
     <h2 class="sr-only" id="xtitle">Experience</h2>
     <ol class="sr-only" id="xlist"></ol>
-    <div class="sticky">
-      <div class="copy">
-        <div class="chapters" id="xch" aria-hidden="true">
-          <div class="ch on">
-            <span class="mono kicker">Experience / Base</span>
-            <h3>Experience</h3>
-            <p class="lede">One pitch, one bolt per role, newest at the top. Each clip opens the next role.</p>
-          </div>
-        </div>
-        <ol class="steps" id="xsteps" aria-label="Experience bolts"></ol>
-        <div class="readout mono"><span>Height <b id="xh">0</b> m</span><span>Draws <b id="xd">0</b></span><span>Route <b>6b+</b></span></div>
-      </div>
-      <div class="scene-wrap">
-        <canvas id="crag" aria-hidden="true"></canvas>
-        <div class="hint mono" id="xhint">Scroll to climb</div>
-      </div>
-    </div>
   </section>
-
-  <section class="ride" id="work" aria-labelledby="wtitle">
+  <div class="gap"></div>
+  <section class="spacer" id="work" aria-labelledby="wtitle">
     <h2 class="sr-only" id="wtitle">Work</h2>
     <ul class="sr-only" id="wlist"></ul>
-    <div class="sticky">
-      <div class="copy">
-        <div class="chapters" id="wch" aria-hidden="true">
-          <div class="ch on">
-            <span class="mono kicker">Work / Road</span>
-            <h3>Work</h3>
-            <p class="lede">Side projects, graded like routes: harder grade, harder problem. Both are live.</p>
-          </div>
-        </div>
-        <ol class="steps" id="wsteps" aria-label="Work stops"></ol>
-        <div class="readout mono"><span>Dist <b id="wkm">0.0</b> km</span><span>Stop <b id="ws">0</b></span><span>Grade <b id="wg">–</b></span></div>
-      </div>
-      <div class="scene-wrap">
-        <canvas id="ride" aria-hidden="true"></canvas>
-        <div class="hint mono" id="whint">Scroll to ride</div>
-      </div>
-    </div>
   </section>
 
-  <section class="section" id="resume">
-    <div class="contact">
-      <div class="head" style="display: block; margin: 0">
-        <h2>Resume</h2>
-        <p style="margin-top: 16px">One page, plain, printable.</p>
-        <div class="actions" style="margin-top: 28px">
-          <a class="btn" href="#">View resume</a>
-          <a class="btn ghost" href="#">Download PDF</a>
-        </div>
+  <section class="resume" id="resume">
+    <div>
+      <h2 class="rv">Resume</h2>
+      <p class="intro rv">One page, plain, printable.</p>
+      <div class="actions rv">
+        <a class="btn" href="#">View resume</a>
+        <a class="btn ghost" href="#">Download PDF</a>
       </div>
       <ul class="rows" id="contacts"></ul>
     </div>
+    <div class="slot" id="slot" aria-hidden="true"></div>
+    <footer class="foot mono">
+      <span>© <span id="yr"></span> Alan Tay</span>
+      <a href="#top">Back to trailhead ↑</a>
+    </footer>
   </section>
 </main>
-
-<footer class="foot mono">
-  <span>© <span id="yr"></span> Alan Tay</span>
-  <a href="#top">Back to trailhead ↑</a>
-</footer>
 
 <script>
 // ---- Content: edit here. Placeholders in [BRACKETS]. ----
@@ -258,8 +238,8 @@ const SITE = {
     // camp: true places the campsite (pot = Ask Ah Mah, dog = Towner Godpawrents) at this checkpoint
     { k: 'Projects', p: 0.6, camp: true, title: 'Two side projects, both live.', body: 'Designed, built and run by me. Still shipping on weekends.',
       projects: [
-        { name: 'Ask Ah Mah', line: 'AI cooking chat · Next.js, AI SDK, Postgres', href: 'https://ask-ah-mah.vercel.app' },
-        { name: 'Towner Godpawrents', line: 'Dog-sitting diary · Astro, Redis', href: 'https://townergodpawrents.vercel.app' },
+        { name: 'Ask Ah Mah', line: 'AI cooking chat, Next.js, AI SDK, Postgres', href: 'https://ask-ah-mah.vercel.app' },
+        { name: 'Towner Godpawrents', line: 'Dog-sitting diary, Astro, Redis', href: 'https://townergodpawrents.vercel.app' },
       ] },
     { k: 'Off clock', p: 0.82, title: 'Weekends on rock and long roads.', body: '[Climbing and touring line: longest tour, favourite crag.]', tags: ['[LONGEST TOUR] km', '[HARDEST SEND]'] },
   ],
@@ -273,11 +253,11 @@ const SITE = {
     // Each project gets a roadside sign in the Work ride, in this order
     { grade: '7a', meta: 'AI product · since 2025', name: 'Ask Ah Mah',
       blurb: 'A cooking chat that remembers what is in your kitchen and suggests what to make tonight, in the voice of a Singaporean grandma.',
-      stack: 'Next.js 15 · Vercel AI SDK · Postgres + Prisma · better-auth · Jest, Playwright, LLM evals',
+      stack: 'Next.js 15, Vercel AI SDK, Postgres + Prisma, better-auth, Jest, Playwright, LLM evals',
       facts: '368 commits · 30 ADRs', href: 'https://ask-ah-mah.vercel.app' },
     { grade: '5c', meta: 'Personal site · 2026', name: 'Towner Godpawrents',
       blurb: 'A daily diary of the neighbours’ dogs staying on our sofa. Shows who is visiting today, in Singapore time.',
-      stack: 'Astro · Tailwind v4 · Upstash Redis · Vercel',
+      stack: 'Astro, Tailwind v4, Upstash Redis, Vercel',
       facts: '9 guests · 250+ commits', href: 'https://townergodpawrents.vercel.app' },
   ],
   contacts: [
@@ -288,143 +268,77 @@ const SITE = {
 };
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
 <script>
-// ---- Page: rendering, theme, sticky section chapters ----
+// ---- Page: content, theme, smooth scroll, and the GSAP choreography that drives the stage ----
+// window.FX is the bus the 3D scenes read: section progress (p), handoff amounts (out / in), and whether to render (on).
+window.FX = {
+  hero: { p: 0, out: 0, on: true },
+  crag: { p: 0, in: 0, out: 0, on: false },
+  ride: { p: 0, in: 0, on: false },
+  bg: '',
+  _wake: {},
+  wake(name, fn) { this._wake[name] = fn; },
+  show(name, on) { if (this[name].on === on) return; this[name].on = on; if (on && this._wake[name]) this._wake[name](); },
+};
 (function () {
-  document.documentElement.classList.add('js');
+  const FX = window.FX;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  const clamp = (v) => Math.min(Math.max(v, 0), 1);
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   $('#yr').textContent = new Date().getFullYear();
+  // Shared state for the HUD; declared up front because ScrollTrigger callbacks fire during setup
+  let zone = 'hero', lastLabel = '', h1 = null, h2 = null, h3 = null;
+  const R = { max: 1, w: 1, zones: null, stops: [] };
+  gsap.registerPlugin(ScrollTrigger, SplitText);
 
-  // Theme toggle
-  const themeBtn = $('#theme');
-  function effectiveDark() {
-    const t = document.documentElement.getAttribute('data-theme');
-    return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // Theme + journey tint: the sky warms from day toward dusk as you go
+  const root = document.documentElement, themeBtn = $('#theme');
+  const effectiveDark = () => { const t = root.getAttribute('data-theme'); return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches; };
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, t) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  let tintT = 0;
+  function paintTint() {
+    const c = effectiveDark() ? mix('#0e1411', '#16120f', tintT) : mix('#eceeea', '#f0e3da', tintT);
+    root.style.setProperty('--tint', c);
+    FX.bg = c;
   }
-  function syncThemeLabel() { themeBtn.textContent = effectiveDark() ? 'Light' : 'Dark'; }
-  try { const saved = localStorage.getItem('theme'); if (saved) document.documentElement.setAttribute('data-theme', saved); } catch (e) {}
-  syncThemeLabel();
+  function syncTheme() { themeBtn.textContent = effectiveDark() ? 'Light' : 'Dark'; paintTint(); }
+  try { const saved = localStorage.getItem('theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+  syncTheme();
   themeBtn.addEventListener('click', () => {
     const next = effectiveDark() ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
+    root.setAttribute('data-theme', next);
     try { localStorage.setItem('theme', next); } catch (e) {}
-    syncThemeLabel();
+    syncTheme();
   });
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncThemeLabel);
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
 
-  // Nav rule after hero starts scrolling
-  const nav = $('#nav');
-  const onNav = () => nav.classList.toggle('scrolled', window.scrollY > 8);
-  window.addEventListener('scroll', onNav, { passive: true }); onNav();
-
-  // Hero chapters + checkpoint stepper
-  const stage = $('#stage'), chapters = $('#chapters'), steps = $('#steps');
-  SITE.hero.forEach((c, i) => {
-    const num = 'CP 0' + (i + 1) + ' / ';
-    if (i > 0) {
-      const d = document.createElement('div');
-      d.className = 'ch'; d.dataset.i = i;
-      d.innerHTML = '<span class="mono kicker">' + esc(num + c.k) + '</span><h2>' + esc(c.title) + '</h2><p class="lede">' + esc(c.body) + '</p>' +
-        (c.tags && c.tags.length ? '<ul class="tags">' + c.tags.map((t, j) => '<li style="--i:' + j + '">' + esc(t) + '</li>').join('') + '</ul>' : '') +
-        (c.projects ? '<ul class="plist">' + c.projects.map((pr, j) => '<li style="--i:' + j + '"><a href="' + esc(pr.href) + '" target="_blank" rel="noopener"><b>' + esc(pr.name) + ' ↗</b><span class="mono">' + esc(pr.line) + '</span></a></li>').join('') + '</ul>' : '');
-      chapters.appendChild(d);
-    }
-    const li = document.createElement('li');
-    li.innerHTML = '<button type="button" aria-label="' + esc(c.k) + '">0' + (i + 1) + '<span class="sk"> ' + esc(c.k) + '</span></button>';
-    li.firstChild.addEventListener('click', () => {
-      const span = stage.offsetHeight - window.innerHeight;
-      window.scrollTo({ top: stage.offsetTop + Math.min(c.p + 0.03, 1) * span, behavior: reduce.matches ? 'auto' : 'smooth' });
-    });
-    steps.appendChild(li);
-  });
-  const chEls = Array.from(chapters.children), stepBtns = Array.from(steps.querySelectorAll('button'));
-  let curCh = -1;
-  function updateHero() {
-    const r = stage.getBoundingClientRect();
-    const p = clamp(-r.top / Math.max(r.height - window.innerHeight, 1));
-    let i = 0;
-    SITE.hero.forEach((c, j) => { if (p >= c.p) i = j; });
-    if (i === curCh) return;
-    curCh = i;
-    chEls.forEach((el, j) => el.classList.toggle('on', j === i));
-    stepBtns.forEach((b, j) => {
-      b.classList.toggle('done', j <= i);
-      b.classList.toggle('cur', j === i);
-      if (j === i) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
-    });
-  }
-  window.addEventListener('scroll', () => requestAnimationFrame(updateHero), { passive: true });
-  window.addEventListener('resize', updateHero);
-  updateHero();
-
-  // Sticky 3D sections (crag, ride): each step of scroll travels for 80%, then rests.
-  // `at(p)` gives { seg, e (eased travel), idx (current chapter) }; the 3D scenes read the same function.
-  const stepper = (N) => (p) => {
-    const s = Math.min(Math.max(p, 0) * N, N - 1e-6), seg = Math.floor(s), u = s - seg, m = Math.min(u / 0.8, 1);
-    return { seg, e: m * m * (3 - 2 * m), idx: Math.min(seg + (u >= 0.8 ? 1 : 0), N - 1) };
-  };
-  const pad = (i) => (i < 10 ? '0' : '') + i;
+  // Chapters: build every panel's content
   function chapter(html) { const d = document.createElement('div'); d.className = 'ch'; d.innerHTML = html; return d; }
-  // Stepper buttons + chapter swap for one sticky section. readout(c, f) gets the step and overall travel 0..1.
-  function stepSection(sec, chs, stepsEl, items, readout) {
-    const N = items.length, at = stepper(N);
-    sec.style.height = (100 + N * 70) + 'vh';
-    items.forEach((s, i) => {
-      const li = document.createElement('li');
-      li.innerHTML = '<button type="button" aria-label="' + esc(s.label) + '">' + esc(s.k) + (s.sk ? '<span class="sk"> ' + esc(s.sk) + '</span>' : '') + '</button>';
-      li.firstChild.addEventListener('click', () => {
-        const span = sec.offsetHeight - window.innerHeight;
-        window.scrollTo({ top: sec.offsetTop + (i ? (i - 0.1) / N : 0) * span, behavior: reduce.matches ? 'auto' : 'smooth' });
-      });
-      stepsEl.appendChild(li);
-    });
-    const els = Array.from(chs.children), btns = Array.from(stepsEl.querySelectorAll('button'));
-    let cur = -1;
-    function update() {
-      const r = sec.getBoundingClientRect();
-      const c = at(clamp(-r.top / Math.max(r.height - window.innerHeight, 1)));
-      readout(c, c.seg >= N - 1 ? 1 : (c.seg + c.e) / (N - 1));
-      if (c.idx === cur) return;
-      cur = c.idx;
-      els.forEach((el, j) => el.classList.toggle('on', j === cur));
-      btns.forEach((b, j) => {
-        b.classList.toggle('done', j <= cur);
-        b.classList.toggle('cur', j === cur);
-        if (j === cur) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
-      });
-    }
-    window.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
-    window.addEventListener('resize', update);
-    update();
-    return at;
-  }
+  const tags = (list) => list && list.length ? '<ul class="tags">' + list.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '';
+  const heroCh = $('#chapters');
+  SITE.hero.slice(1).forEach((c) => heroCh.appendChild(chapter('<h2>' + esc(c.title) + '</h2><p class="lede">' + esc(c.body) + '</p>' + tags(c.tags) +
+    (c.projects ? '<ul class="plist">' + c.projects.map((pr) => '<li><a href="' + esc(pr.href) + '" target="_blank" rel="noopener"><b>' + esc(pr.name) + ' ↗</b><span class="mono">' + esc(pr.line) + '</span></a></li>').join('') + '</ul>' : ''))));
 
-  // Experience: crag. Base, one bolt per role, then the anchor.
   const xn = SITE.experience.length, xch = $('#xch');
   $('#xlist').innerHTML = SITE.experience.map((e) => '<li>' + esc(e.role) + ', ' + esc(e.org) + ', ' + esc(e.start) + ' to ' + esc(e.end) + '. ' + esc(e.highlight) + '</li>').join('');
-  SITE.experience.forEach((e, i) => xch.appendChild(chapter('<span class="mono kicker">Bolt ' + pad(i + 1) + ' / ' + esc(e.start) + ' – ' + esc(e.end) + '</span><h3>' + esc(e.role) + '</h3><p class="org">' + esc(e.org) + '</p><p class="lede">' + esc(e.highlight) + '</p>')));
-  xch.appendChild(chapter('<span class="mono kicker">Anchor / ' + esc(SITE.next.label) + '</span><h3>' + esc(SITE.next.role) + '</h3><p class="lede">The next pitch is open. The resume has the full details.</p><a class="btn ghost" href="#resume" tabindex="-1">Resume</a>'));
-  const xh = $('#xh'), xd = $('#xd');
-  window.climbAt = stepSection($('#experience'), xch, $('#xsteps'),
-    [{ k: 'Base', label: 'Base' }].concat(SITE.experience.map((e, i) => ({ k: pad(i + 1), sk: e.org, label: 'Bolt ' + pad(i + 1) })), [{ k: 'Top', sk: SITE.next.role, label: 'Anchor' }]),
-    (c, f) => { xh.textContent = String(Math.round(f * 24)); xd.textContent = Math.min(c.idx, xn) + '/' + xn; });
+  xch.appendChild(chapter('<h3>Experience</h3><p class="lede">One pitch, one bolt per role, newest at the top. Each clip opens the next role.</p>'));
+  SITE.experience.forEach((e) => xch.appendChild(chapter('<span class="mono kicker">' + esc(e.start) + ' - ' + esc(e.end) + '</span><h3>' + esc(e.role) + '</h3><p class="org">' + esc(e.org) + '</p><p class="lede">' + esc(e.highlight) + '</p>')));
+  xch.appendChild(chapter('<h3>' + esc(SITE.next.role) + '</h3><p class="lede">The next pitch is open. The resume has the full details.</p><a class="btn ghost" href="#resume" tabindex="-1">Resume</a>'));
 
-  // Work: ride. The road, then one roadside sign per project.
   const wn = SITE.projects.length, wch = $('#wch');
   $('#wlist').innerHTML = SITE.projects.map((p) => '<li><a href="' + esc(p.href) + '" target="_blank" rel="noopener">' + esc(p.name) + '</a>, ' + esc(p.meta) + '. ' + esc(p.blurb) + ' ' + esc(p.stack) + '.</li>').join('');
-  SITE.projects.forEach((p, i) => wch.appendChild(chapter('<span class="mono kicker">Stop ' + pad(i + 1) + ' / ' + esc(p.meta) + '</span><h3>' + esc(p.name) + '</h3><p class="lede">' + esc(p.blurb) + '</p>' +
+  wch.appendChild(chapter('<h3>Work</h3><p class="lede">Side projects, graded like routes: harder grade, harder problem. Both are live.</p>'));
+  SITE.projects.forEach((p) => wch.appendChild(chapter('<span class="mono kicker">' + esc(p.meta) + '</span><h3>' + esc(p.name) + '</h3><p class="lede">' + esc(p.blurb) + '</p>' +
     '<span class="mono stack">' + esc(p.stack) + (p.facts ? '<br>' + esc(p.facts) : '') + '</span><a class="btn" href="' + esc(p.href) + '" target="_blank" rel="noopener" tabindex="-1">Visit site ↗</a>')));
-  const wkm = $('#wkm'), ws = $('#ws'), wg = $('#wg');
-  window.rideAt = stepSection($('#work'), wch, $('#wsteps'),
-    [{ k: 'Road', label: 'Road' }].concat(SITE.projects.map((p, i) => ({ k: pad(i + 1), sk: p.name, label: p.name }))),
-    (c, f) => { wkm.textContent = (f * 6.4).toFixed(1); ws.textContent = c.idx + '/' + wn; wg.textContent = c.idx ? SITE.projects[c.idx - 1].grade : '–'; });
 
   // Contacts
   $('#contacts').innerHTML = SITE.contacts.map((c, i) =>
-    '<li><span class="mono k">' + esc(c.k) + '</span>' +
+    '<li class="rv"><span class="mono k">' + esc(c.k) + '</span>' +
     (c.href ? '<a class="val" href="' + esc(c.href) + '" target="_blank" rel="noopener">' + esc(c.v) + ' ↗</a><span></span>' :
       '<span class="val" id="cv' + i + '">' + esc(c.v) + '</span>' + (c.copy ? '<button class="copybtn" type="button" data-copy="' + i + '">Copy</button>' : '<span></span>')) +
     '</li>'
@@ -434,6 +348,245 @@ const SITE = {
     const done = () => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1600); };
     navigator.clipboard.writeText(el.textContent).then(done, () => { const s = window.getSelection(), r = document.createRange(); r.selectNodeContents(el); s.removeAllRanges(); s.addRange(r); });
   }));
+
+  // Headlines and ledes split into masked lines, so chapters can rise in line by line
+  const SPLIT = 'h1, h2, h3, .lede, .org';
+  const lines = (el) => el ? Array.from(el.querySelectorAll('.ln')) : [];
+  const rest = (el) => el ? Array.from(el.children).flatMap((c) => c.matches(SPLIT) ? [] : c.matches('ul') ? Array.from(c.children) : [c]) : [];
+  if (!reduce) {
+    document.querySelectorAll('.ch').forEach((ch) => ch.querySelectorAll(SPLIT).forEach((el) =>
+      SplitText.create(el, { type: 'lines', mask: 'lines', linesClass: 'ln', autoSplit: true })));
+  }
+
+  // Chapter swap inside one panel: old lines slide out the way you're scrolling, new ones rise in behind them
+  function swapper(container) {
+    const els = Array.from(container.children);
+    let cur = 0, tl = null;
+    els.forEach((e, j) => { e.classList.remove('on'); gsap.set(e, { autoAlpha: j ? 0 : 1 }); });
+    return function (to, dir) {
+      if (to === cur) return;
+      const from = cur; cur = to;
+      if (tl) tl.progress(1).kill();
+      els.forEach((e, j) => { if (j !== from && j !== to) gsap.set(e, { autoAlpha: 0 }); });
+      const a = els[from], b = els[to], d = dir < 0 ? -1 : 1;
+      if (reduce) { gsap.set(a, { autoAlpha: 0 }); gsap.set(b, { autoAlpha: 1 }); return; }
+      tl = gsap.timeline()
+        .to(lines(a), { yPercent: -112 * d, duration: 0.32, stagger: 0.025, ease: 'power2.in' }, 0)
+        .to(rest(a), { y: -16 * d, autoAlpha: 0, duration: 0.28, stagger: 0.02, ease: 'power2.in' }, 0)
+        .set(a, { autoAlpha: 0 })
+        .add(() => gsap.set(lines(a).concat(rest(a)), { clearProps: 'transform,opacity,visibility' }))
+        .set(b, { autoAlpha: 1 })
+        .fromTo(lines(b), { yPercent: 112 * d }, { yPercent: 0, duration: 0.8, stagger: 0.06, ease: 'expo.out' })
+        .fromTo(rest(b), { y: 20 * d, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.6, stagger: 0.05, ease: 'power3.out' }, '<0.12');
+    };
+  }
+
+  // Stepped sections (crag, ride): each step of scroll travels for 80%, then rests on a chapter.
+  // `at(p)` gives { seg, e (eased travel), idx (current chapter) }; the 3D scenes read the same function.
+  const stepper = (N) => (p) => {
+    const s = Math.min(Math.max(p, 0) * N, N - 1e-6), seg = Math.floor(s), u = s - seg, m = Math.min(u / 0.8, 1);
+    return { seg, e: m * m * (3 - 2 * m), idx: Math.min(seg + (u >= 0.8 ? 1 : 0), N - 1) };
+  };
+  function stepped(sec, container, labels) {
+    const N = labels.length, at = stepper(N), swap = swapper(container);
+    sec.style.height = (100 + N * 70) + 'vh';
+    const st = { at, labels, f: 0, idx: 0,
+      update(p, dir) {
+        const c = at(p);
+        st.f = c.seg >= N - 1 ? 1 : (c.seg + c.e) / (N - 1);
+        st.idx = c.idx;
+        swap(c.idx, dir);
+      },
+      stops: (start, span) => labels.map((label, i) => ({ s: start + (i ? (i - 0.1) / N : 0) * span, label })) };
+    return st;
+  }
+  const crag = stepped($('#experience'), xch, ['Experience'].concat(SITE.experience.map((e) => e.org), [SITE.next.role]));
+  const ride = stepped($('#work'), wch, ['Work'].concat(SITE.projects.map((p) => p.name)));
+  window.climbAt = crag.at;
+  window.rideAt = ride.at;
+  const heroSwap = swapper(heroCh);
+  let heroIdx = 0;
+
+  // Smooth scroll (skipped for reduced motion); ScrollTrigger rides on Lenis
+  let lenis = null;
+  if (!reduce && window.Lenis) {
+    lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((t) => lenis.raf(t * 1000));
+    gsap.ticker.lagSmoothing(0);
+  }
+  const go = (y) => lenis ? lenis.scrollTo(y, { duration: 1.8 }) : window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
+  const startOf = (el) => el.offsetTop, spanOf = (el) => Math.max(el.offsetHeight - window.innerHeight, 1);
+  const secs = { stage: $('#stage'), experience: $('#experience'), work: $('#work'), resume: $('#resume') };
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || a.getAttribute('href') === '#') return;
+    const id = a.getAttribute('href').slice(1), el = id === 'top' ? null : secs[id];
+    if (id !== 'top' && !el) return;
+    e.preventDefault();
+    go(el ? startOf(el) + (id === 'resume' ? 0 : 2) : 0);
+  });
+
+  // Section progress -> FX + chapters
+  ScrollTrigger.create({ trigger: secs.stage, start: 'top top', end: 'bottom bottom',
+    onUpdate: (s) => { FX.hero.p = s.progress; heroStep(s.direction); hud(); }, onRefresh: (s) => { FX.hero.p = s.progress; heroStep(1); } });
+  function heroStep(dir) {
+    let i = 0;
+    SITE.hero.forEach((c, j) => { if (FX.hero.p >= c.p) i = j; });
+    if (i !== heroIdx) { heroIdx = i; heroSwap(i, dir); }
+  }
+  ScrollTrigger.create({ trigger: secs.experience, start: 'top top', end: 'bottom bottom',
+    onUpdate: (s) => { FX.crag.p = s.progress; crag.update(s.progress, s.direction); hud(); }, onRefresh: (s) => { FX.crag.p = s.progress; crag.update(s.progress, 1); } });
+  ScrollTrigger.create({ trigger: secs.work, start: 'top top', end: 'bottom bottom',
+    onUpdate: (s) => { FX.ride.p = s.progress; ride.update(s.progress, s.direction); hud(); }, onRefresh: (s) => { FX.ride.p = s.progress; ride.update(s.progress, 1); } });
+
+  // ---- Handoffs: scrubbed across the scroll between two sections ----
+  const smooth = (x) => x * x * (3 - 2 * x);
+  gsap.set('#lhero', { autoAlpha: 1 });
+  gsap.set(['#lcrag', '#lride', '#pcrag', '#pride'], { autoAlpha: 0 });
+  if (reduce) { FX.crag.in = 1; FX.ride.in = 1; }
+
+  // Jagged top and bottom edge for the rock band
+  (function () {
+    let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const top = [], bot = [];
+    for (let i = 0; i <= 24; i++) { const x = (i / 24 * 100).toFixed(2); top.push(x + '% ' + (r() * 7).toFixed(2) + '%'); bot.unshift(x + '% ' + (93 + r() * 7).toFixed(2) + '%'); }
+    $('#wipe').style.clipPath = 'polygon(' + top.concat(bot).join(',') + ')';
+  })();
+
+  const hand = (trigger, endTrigger) => ({ trigger, start: 'bottom bottom', endTrigger, end: 'top top', scrub: true, invalidateOnRefresh: true, onUpdate: sync, onRefresh: sync });
+
+  // 1. Island -> crag: the camera dives into the island, a rock band sweeps up the screen, the crag is waiting behind it
+  h1 = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: hand(secs.stage, secs.experience) });
+  h1.to('#phero', { yPercent: -16, autoAlpha: 0, duration: 0.32, ease: 'power2.in' }, 0);
+  if (reduce) {
+    h1.to('#lhero', { autoAlpha: 0, duration: 0.3 }, 0.3).to('#lcrag', { autoAlpha: 1, duration: 0.3 }, 0.4);
+  } else {
+    h1.to(FX.hero, { out: 1, duration: 0.6, ease: 'power2.in' }, 0)
+      .to('#vhero', { scale: 1.1, duration: 0.6, ease: 'power2.in' }, 0)
+      .fromTo('#wipe', { y: () => window.innerHeight, autoAlpha: 1 }, { y: () => -$('#wipe').offsetHeight, duration: 0.72 }, 0.2)
+      .set('#lhero', { autoAlpha: 0 }, 0.55).set('#lcrag', { autoAlpha: 1 }, 0.55)
+      .to(FX.crag, { in: 1, duration: 0.45, ease: 'power2.out' }, 0.55);
+  }
+  h1.fromTo('#pcrag', { autoAlpha: 0, yPercent: 12, clipPath: 'inset(0% 0% 100% 0%)' }, { autoAlpha: 1, yPercent: 0, clipPath: 'inset(0% 0% 0% 0%)', duration: 0.28, ease: 'power3.out' }, 0.72);
+
+  // 2. Crag -> ride: top out and look up into open sky; the ride starts in that same sky and tilts down to the road
+  h2 = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: hand(secs.experience, secs.work) });
+  h2.to('#pcrag', { yPercent: -14, autoAlpha: 0, duration: 0.3, ease: 'power2.in' }, 0);
+  if (reduce) {
+    h2.to('#lcrag', { autoAlpha: 0, duration: 0.3 }, 0.3).to('#lride', { autoAlpha: 1, duration: 0.3 }, 0.4);
+  } else {
+    h2.to(FX.crag, { out: 1, duration: 0.5, ease: 'power2.inOut' }, 0)
+      .to('#lcrag', { autoAlpha: 0, duration: 0.08 }, 0.44)
+      .to('#lride', { autoAlpha: 1, duration: 0.08 }, 0.46)
+      .to(FX.ride, { in: 1, duration: 0.5, ease: 'power2.inOut' }, 0.5);
+  }
+  h2.fromTo('#pride', { autoAlpha: 0, yPercent: 14, clipPath: 'inset(0% 0% 100% 0%)' }, { autoAlpha: 1, yPercent: 0, clipPath: 'inset(0% 0% 0% 0%)', duration: 0.25, ease: 'power3.out' }, 0.75);
+
+  // 3. Ride -> resume: pull over; the view shrinks into a postcard beside the resume
+  const slotBox = () => {
+    const r = $('#slot').getBoundingClientRect(), q = secs.resume.getBoundingClientRect();
+    return { x: r.left, y: r.top - q.top, s: r.width / Math.max($('#vride').offsetWidth, 1) };
+  };
+  h3 = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: hand(secs.work, secs.resume) });
+  h3.to('#pride', { yPercent: -14, autoAlpha: 0, duration: 0.3, ease: 'power2.in' }, 0)
+    .to('#scrim', { autoAlpha: 0, duration: 0.4 }, 0)
+    .to('#route', { autoAlpha: 0, duration: 0.25 }, 0.55);
+  if (reduce) h3.to('#lride', { autoAlpha: 0, duration: 0.4 }, 0.3);
+  else h3.to('#vride', { x: () => slotBox().x, y: () => slotBox().y, scale: () => slotBox().s, duration: 0.85, ease: 'power2.inOut' }, 0.15);
+  // Once landed, the postcard scrolls with the resume if the resume is taller than the screen
+  gsap.to('#lride', { y: () => -Math.max(secs.resume.offsetHeight - window.innerHeight, 0), ease: 'none',
+    scrollTrigger: { trigger: secs.resume, start: 'top top', end: 'bottom bottom', scrub: true, invalidateOnRefresh: true } });
+  function sizeSlot() { const v = $('#vride'); $('#slot').style.setProperty('--va', v.offsetWidth + ' / ' + v.offsetHeight); }
+  sizeSlot();
+  ScrollTrigger.addEventListener('refreshInit', sizeSlot);
+
+  // Resume rows rise in once the postcard has landed
+  if (!reduce) gsap.from('#resume .rv', { y: 28, autoAlpha: 0, duration: 0.7, stagger: 0.06, ease: 'power3.out',
+    scrollTrigger: { trigger: secs.resume, start: 'top 45%', toggleActions: 'play none none reverse' } });
+
+  // Which scenes render, and which section the HUD reports
+  function prog(tl) { return tl && tl.scrollTrigger ? tl.scrollTrigger.progress : 0; }
+  function sync() {
+    const a = prog(h1), b = prog(h2), c = prog(h3);
+    FX.show('hero', a < 0.6);
+    FX.show('crag', a > 0.45 && b < 0.5);
+    FX.show('ride', b > 0.4);
+    zone = c > 0.6 ? 'resume' : b > 0.47 ? 'ride' : a > 0.55 ? 'crag' : 'hero';
+    hud();
+  }
+
+  // ---- Route line: elevation profile over the whole scroll ----
+  const routeEl = $('#route'), dot = $('#rdot'), here = $('#rhere'), ticksEl = $('#ticks'), rrect = $('#rrect');
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function elev(s) {
+    const z = R.zones, t = (a, b) => Math.min(Math.max((s - a) / Math.max(b - a, 1), 0), 1);
+    if (s <= z.h1) { const u = t(0, z.h1); return 0.1 + 0.3 * smooth(u) + 0.05 * Math.sin(u * Math.PI * 5); }
+    if (s <= z.c0) return lerp(0.4, 0.22, smooth(t(z.h1, z.c0)));
+    if (s <= z.c1) return 0.22 + 0.74 * Math.pow(t(z.c0, z.c1), 1.35);
+    if (s <= z.r0) return lerp(0.96, 0.62, smooth(t(z.c1, z.r0)));
+    if (s <= z.r1) { const u = t(z.r0, z.r1); return 0.62 - 0.26 * u + 0.05 * Math.sin(u * Math.PI * 4); }
+    return 0.36;
+  }
+  function layoutRoute() {
+    const H = secs.stage, X = secs.experience, W = secs.work;
+    R.max = Math.max(ScrollTrigger.maxScroll(window), 1);
+    R.w = routeEl.clientWidth;
+    R.zones = { h1: startOf(H) + spanOf(H), c0: startOf(X), c1: startOf(X) + spanOf(X), r0: startOf(W), r1: startOf(W) + spanOf(W) };
+    R.stops = SITE.hero.map((c) => ({ s: startOf(H) + Math.min(c.p + 0.03, 1) * spanOf(H), label: c.k }))
+      .concat(crag.stops(startOf(X), spanOf(X)), ride.stops(startOf(W), spanOf(W)), [{ s: R.max, label: 'Resume' }]);
+    let d = '';
+    for (let i = 0; i <= 240; i++) { const s = i / 240 * R.max; d += (i ? 'L' : 'M') + (i / 240 * 1000).toFixed(1) + ' ' + ((1 - elev(s)) * 36).toFixed(2); }
+    $('#rbase').setAttribute('d', d); $('#rdone').setAttribute('d', d);
+    ticksEl.innerHTML = '';
+    R.stops.forEach((st) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.setAttribute('aria-label', st.label); b.title = st.label;
+      b.style.left = (st.s / R.max * 100).toFixed(3) + '%';
+      b.addEventListener('click', () => go(st.s));
+      ticksEl.appendChild(b);
+      st.el = b;
+    });
+    hud();
+  }
+  ScrollTrigger.addEventListener('refresh', layoutRoute);
+
+  const rd = $('#rd'), re = $('#re'), rg = $('#rg');
+  function hud() {
+    if (!R.zones) return;
+    const s = Math.min(Math.max(window.scrollY, 0), R.max), x = s / R.max;
+    rrect.setAttribute('width', (x * 1000 + 10).toFixed(1));
+    dot.style.transform = here.style.left = '';
+    const px = x * R.w, py = 18 + (1 - elev(s)) * 36;
+    dot.style.left = px.toFixed(1) + 'px'; dot.style.top = py.toFixed(1) + 'px';
+    here.style.left = Math.min(Math.max(px, 60), R.w - 60).toFixed(1) + 'px'; here.style.top = py.toFixed(1) + 'px';
+    R.stops.forEach((st) => st.el && st.el.classList.toggle('done', st.s <= s + 4));
+    let label, dist, el, grade;
+    if (zone === 'hero') {
+      const p = FX.hero.p, e = smooth(p);
+      label = SITE.hero[heroIdx].k; dist = p * 42; el = e * 860; grade = Math.round(2 + 6 * Math.sin(Math.PI * Math.min(p * 1.1, 1))) + '%';
+    } else if (zone === 'crag') {
+      label = crag.labels[crag.idx]; dist = 42; el = 860 + crag.f * 24; grade = '6b+';
+    } else {
+      label = zone === 'resume' ? 'Resume' : ride.labels[ride.idx]; dist = 42 + ride.f * 6.4; el = 884 - ride.f * 310; grade = ride.idx ? SITE.projects[ride.idx - 1].grade : '-';
+    }
+    if (label !== lastLabel) { lastLabel = label; here.textContent = label; }
+    rd.textContent = dist.toFixed(1); re.textContent = '+' + Math.round(el); rg.textContent = grade;
+  }
+
+  // One tracker for the whole page: tint and route
+  ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (s) => { tintT = s.progress; paintTint(); hud(); } });
+
+  // Entrance: the first headline rises in line by line
+  if (!reduce && window.scrollY < 10) {
+    document.fonts.ready.then(() => {
+      const ch0 = heroCh.children[0];
+      gsap.from(lines(ch0), { yPercent: 112, duration: 1.1, stagger: 0.08, ease: 'expo.out', delay: 0.15 });
+      gsap.from(rest(ch0).concat($('#seework')), { y: 20, autoAlpha: 0, duration: 0.8, ease: 'power3.out', delay: 0.5 });
+      gsap.from('#route', { autoAlpha: 0, duration: 1, delay: 0.7 });
+    });
+  }
+  document.fonts.ready.then(() => ScrollTrigger.refresh());
 })();
 </script>
 
@@ -507,8 +660,7 @@ const CLAY = !window.THREE ? null : (function () {
 (function () {
   const canvas = document.getElementById('scene');
   const wrap = canvas.parentElement;
-  const stage = document.getElementById('stage');
-  const kmEl = document.getElementById('km'), climbEl = document.getElementById('climb'), gradeEl = document.getElementById('grade');
+  const FX = window.FX.hero;
 
   function fallback(msg) {
     canvas.remove();
@@ -945,12 +1097,8 @@ const CLAY = !window.THREE ? null : (function () {
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   let target = 0, cur = 0, crank = 0, px = 0, py = 0, tx = 0, ty = 0, progress = 0;
-  function readScroll() {
-    const r = stage.getBoundingClientRect(), span = r.height - window.innerHeight;
-    progress = Math.min(Math.max(-r.top / Math.max(span, 1), 0), 1);
-    target = 0.03 + progress * 0.94;
-  }
-  window.addEventListener('scroll', readScroll, { passive: true });
+  // Scroll progress comes from the page's GSAP triggers via window.FX
+  function readScroll() { progress = FX.p; target = 0.03 + progress * 0.94; }
   readScroll(); cur = target;
   wrap.addEventListener('pointermove', (e) => {
     const r = wrap.getBoundingClientRect();
@@ -958,23 +1106,16 @@ const CLAY = !window.THREE ? null : (function () {
   });
   wrap.addEventListener('pointerleave', () => { tx = 0; ty = 0; });
 
-  const hint = document.getElementById('hint');
   const tmp = new THREE.Vector3();
   function place(t) {
     const p = route.getPointAt(t), tan = route.getTangentAt(t);
     rider.position.set(p.x, 0.022, p.z);
     rider.lookAt(tmp.set(p.x + tan.x, 0.022, p.z + tan.z));
   }
-  function readout(p) {
-    const e = p * p * (3 - 2 * p);
-    kmEl.textContent = (p * 42).toFixed(1);
-    climbEl.textContent = '+' + Math.round(e * 860);
-    gradeEl.textContent = String(Math.round(2 + 6 * Math.sin(Math.PI * Math.min(p * 1.1, 1))));
-  }
-
-  let visible = true, raf = 0, last = performance.now();
+  let raf = 0, last = performance.now();
   function frame(now) {
     raf = 0;
+    readScroll();
     const dt = Math.min((now - last) / 1000, 0.05); last = now;
     const still = reduce.matches;
     const prev = cur;
@@ -1000,6 +1141,14 @@ const CLAY = !window.THREE ? null : (function () {
     });
     world.updateMatrixWorld();
     aimCamera(progress, still ? 1 : Math.min(1, dt * 5));
+    // Handoff to the crag: dive the camera into the island
+    const out = FX.out;
+    if (out > 0) {
+      camera.position.lerp(look, out * 0.82);
+      camera.lookAt(look);
+      camera.updateMatrixWorld();
+    }
+    const quiet = out > 0.12;
     // Only the latest reached checkpoint keeps its label
     let curCp = -1;
     flags.forEach((f, i) => { if (cur >= f.t - 0.004) curCp = i; });
@@ -1010,7 +1159,7 @@ const CLAY = !window.THREE ? null : (function () {
       f.g.visible = f.s > 0.01;
       f.g.scale.set(1, Math.max(f.s, 0.001), 1);
       f.cloth.rotation.y = still ? 0 : Math.sin(time * 2.2 + i) * 0.35;
-      f.el.classList.toggle('on', i === curCp && f.s > 0.6);
+      f.el.classList.toggle('on', i === curCp && f.s > 0.6 && !quiet);
       if (f.g.visible) {
         f.g.localToWorld(f.top.set(0, 1.1, 0)).project(camera);
         placeLabel(f.el, f.top);
@@ -1027,7 +1176,7 @@ const CLAY = !window.THREE ? null : (function () {
         m.scale.setScalar(0.035 + Math.sin(u * Math.PI) * 0.05);
       });
       camp.tail.rotation.y = still ? 0 : Math.sin(time * 10) * 0.5;
-      const on = camp.g.visible && s > 0.6 && progress < camp.end - 0.02;
+      const on = camp.g.visible && s > 0.6 && progress < camp.end - 0.02 && !quiet;
       camp.labels.forEach((l) => {
         l.el.classList.toggle('on', on);
         if (camp.g.visible) {
@@ -1036,15 +1185,10 @@ const CLAY = !window.THREE ? null : (function () {
         }
       });
     }
-    readout(progress);
-    hint.style.opacity = String(Math.max(0, 1 - progress * 6));
     renderer.render(scene, camera);
-    if (visible) raf = requestAnimationFrame(frame);
+    if (FX.on) raf = requestAnimationFrame(frame);
   }
-  new IntersectionObserver((es) => {
-    visible = es[0].isIntersecting;
-    if (visible && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
-  }).observe(wrap);
+  window.FX.wake('hero', () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } });
   raf = requestAnimationFrame(frame);
 })();
 </script>
@@ -1053,7 +1197,7 @@ const CLAY = !window.THREE ? null : (function () {
 (function () {
   const canvas = document.getElementById('crag');
   if (!canvas || !CLAY || !window.climbAt) return;
-  const wrap = canvas.parentElement, stage = document.getElementById('experience');
+  const wrap = canvas.parentElement, FX = window.FX.crag;
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { return; }
   const { V, rng, mat, shadowy, bar, limb, lights } = CLAY;
@@ -1340,24 +1484,22 @@ const CLAY = !window.THREE ? null : (function () {
   const hipPts = [0.55].concat(boltY.map((y) => y - 0.32));
   let progress = 0, target = hipPts[0], hip = target, px = 0, py = 0, tx = 0, ty = 0, ropeKey = '';
   function readScroll() {
-    const r = stage.getBoundingClientRect();
-    progress = Math.min(Math.max(-r.top / Math.max(r.height - window.innerHeight, 1), 0), 1);
+    progress = FX.p;
     const c = window.climbAt(progress);
     target = c.seg >= hipPts.length - 1 ? hipPts[hipPts.length - 1] : hipPts[c.seg] + (hipPts[c.seg + 1] - hipPts[c.seg]) * c.e;
   }
-  window.addEventListener('scroll', readScroll, { passive: true });
   readScroll(); hip = target;
   wrap.addEventListener('pointermove', (e) => {
     const r = wrap.getBoundingClientRect();
     tx = ((e.clientX - r.left) / r.width - 0.5) * 2; ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
   });
   wrap.addEventListener('pointerleave', () => { tx = 0; ty = 0; });
-  const hint = document.getElementById('xhint');
-  const cp = V(0, 0, 0), cn = V(0, 0, 0), harnessW = V(0, 0, 0);
+  const cp = V(0, 0, 0), cn = V(0, 0, 0), harnessW = V(0, 0, 0), aim = V(0, 0, 0);
 
-  let visible = true, raf = 0, lastT = performance.now();
+  let raf = 0, lastT = performance.now();
   function frame(now) {
     raf = 0;
+    readScroll();
     const dt = Math.min((now - lastT) / 1000, 0.05); lastT = now;
     const still = reduce.matches, time = now / 1000;
     hip = still ? target : hip + (target - hip) * Math.min(1, dt * 6);
@@ -1376,9 +1518,12 @@ const CLAY = !window.THREE ? null : (function () {
     look.y += ((2.4 + (hip - 2.4) * 0.25) - look.y) * k;
     const want = fitDist();
     dist = dist ? Math.max(want, dist + (want - dist) * k) : want;
-    camera.position.set(0, look.y + dist * 0.16, dist);
-    camera.lookAt(look);
+    // Handoffs: arrive low and tilt up the wall; leave by looking up past the top into sky
+    const ci = 1 - FX.in, co = FX.out;
+    camera.position.set(0, look.y + dist * 0.16 - ci * dist * 0.4 + co * dist * 0.3, dist - ci * dist * 0.25);
+    camera.lookAt(aim.set(0, look.y + ci * 2.2 + co * dist * 0.42, 0));
     camera.updateMatrixWorld();
+    const quiet = ci > 0.1 || co > 0.1;
     // Quickdraws spring on as they are clipped; only the latest keeps its label
     let cur = -1;
     bolts.forEach((b, i) => { if (hip >= b.clip - 0.005) cur = i; });
@@ -1390,7 +1535,7 @@ const CLAY = !window.THREE ? null : (function () {
       b.qd.visible = b.s > 0.01;
       b.qd.scale.setScalar(Math.max(b.s, 0.001));
       if (i <= cur) pts.push(world.worldToLocal(b.g.localToWorld(b.w.copy(b.ropeAt))).clone());
-      b.el.classList.toggle('on', i === cur && b.s > 0.6);
+      b.el.classList.toggle('on', i === cur && b.s > 0.6 && !quiet);
       if (i === cur) { b.g.localToWorld(tmp.set(0.32, 0, 0)).project(camera); placeSide(b.el, tmp); }
     });
     pts[0] = world.worldToLocal(pts[0]);
@@ -1398,14 +1543,10 @@ const CLAY = !window.THREE ? null : (function () {
     pts.push(world.worldToLocal(climber.body.localToWorld(harnessW.set(0, 0.03, -0.06))).clone());
     const key = pts.map((p) => p.x.toFixed(3) + p.y.toFixed(3) + p.z.toFixed(3)).join();
     if (key !== ropeKey) { ropeKey = key; rope.geometry.dispose(); rope.geometry = tube(pts, 0.02); }
-    hint.style.opacity = String(Math.max(0, 1 - progress * 8));
     renderer.render(scene, camera);
-    if (visible) raf = requestAnimationFrame(frame);
+    if (FX.on) raf = requestAnimationFrame(frame);
   }
-  new IntersectionObserver((es) => {
-    visible = es[0].isIntersecting;
-    if (visible && !raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); }
-  }).observe(wrap);
+  window.FX.wake('crag', () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } });
   raf = requestAnimationFrame(frame);
 })();
 </script>
@@ -1414,7 +1555,7 @@ const CLAY = !window.THREE ? null : (function () {
 (function () {
   const canvas = document.getElementById('ride');
   if (!canvas || !CLAY || !window.rideAt || typeof SITE === 'undefined') return;
-  const wrap = canvas.parentElement, stage = document.getElementById('work');
+  const wrap = canvas.parentElement, FX = window.FX.ride;
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { return; }
   const { V, rng, mat, bar, lights, onTheme } = CLAY;
@@ -1686,10 +1827,9 @@ const CLAY = !window.THREE ? null : (function () {
   });
   onTheme((dark) => {
     faces.forEach((f) => { f.emissiveIntensity = dark ? 0.42 : 0.1; });
-    // Read the page background after the theme's CSS has applied
-    const set = () => fog.color.setStyle(getComputedStyle(document.body).backgroundColor);
-    requestAnimationFrame(set); setTimeout(set, 400);
   });
+  // Fog matches the page tint (window.FX.bg), which shifts with scroll and theme
+  let fogKey = '';
 
   // Cockpit: bars, hands and bar bag, carried by the camera
   const cockpit = new THREE.Group();
@@ -1734,24 +1874,24 @@ const CLAY = !window.THREE ? null : (function () {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   let progress = 0, target = stopS[0], s = target, spd = 0, phase = 0, roll = 0, px = 0, py = 0, tx = 0, ty = 0;
   function readScroll() {
-    const r = stage.getBoundingClientRect(), n = stopS.length;
-    progress = clamp(-r.top / Math.max(r.height - window.innerHeight, 1), 0, 1);
+    const n = stopS.length;
+    progress = FX.p;
     const c = window.rideAt(progress);
     target = c.seg >= n - 1 ? stopS[n - 1] : stopS[c.seg] + (stopS[c.seg + 1] - stopS[c.seg]) * c.e;
   }
-  window.addEventListener('scroll', readScroll, { passive: true });
   readScroll(); s = target;
   wrap.addEventListener('pointermove', (e) => {
     const r = wrap.getBoundingClientRect();
     tx = ((e.clientX - r.left) / r.width - 0.5) * 2; ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
   });
   wrap.addEventListener('pointerleave', () => { tx = 0; ty = 0; });
-  const hint = document.getElementById('whint');
   const cp = V(0, 0, 0), ct = V(0, 0, 0), ct2 = V(0, 0, 0), cr = V(0, 0, 0), look = V(0, 0, 0);
 
-  let visible = true, raf = 0, lastT = performance.now();
+  let raf = 0, lastT = performance.now();
   function frame(now) {
     raf = 0;
+    readScroll();
+    if (window.FX.bg && window.FX.bg !== fogKey) { fogKey = window.FX.bg; fog.color.setStyle(fogKey); }
     const dt = Math.min((now - lastT) / 1000, 0.05); lastT = now;
     const still = reduce.matches, prev = s;
     s = still ? target : s + (target - s) * Math.min(1, dt * 2.2);
@@ -1778,14 +1918,13 @@ const CLAY = !window.THREE ? null : (function () {
     camera.rotateZ(roll);
     cockpit.rotation.z = Math.sin(phase) * 0.018 * go;
     cockpit.position.y = -Math.abs(Math.cos(phase)) * 0.006 * go;
-    hint.style.opacity = String(Math.max(0, 1 - progress * 8));
+    // Handoff from the crag: start looking up at the same sky, then tilt down to the road
+    const pitch = 1 - FX.in;
+    if (pitch > 0) { const e = pitch * pitch * (3 - 2 * pitch); camera.rotateX(e * 0.62); cockpit.position.y -= e * 0.6; }
     renderer.render(scene, camera);
-    if (visible) raf = requestAnimationFrame(frame);
+    if (FX.on) raf = requestAnimationFrame(frame);
   }
-  new IntersectionObserver((es) => {
-    visible = es[0].isIntersecting;
-    if (visible && !raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); }
-  }).observe(wrap);
+  window.FX.wake('ride', () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } });
   raf = requestAnimationFrame(frame);
 })();
 </script>
