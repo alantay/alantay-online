@@ -100,6 +100,7 @@ h1, h2, h3 { text-wrap: balance; }
 /* Cloud bank the camera dives through between scenes */
 .wipe { position: absolute; left: -5%; right: -5%; top: 0; height: 170vh; visibility: hidden; will-change: transform; pointer-events: none; }
 .wipe .billow { position: absolute; left: 0; right: 0; top: 10%; bottom: 10%; will-change: transform; }
+.puffs { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .fallback { position: absolute; inset: 0; display: grid; place-items: center; }
 .grain { position: fixed; inset: 0; z-index: 9; pointer-events: none; opacity: 0.07; will-change: transform;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
@@ -112,6 +113,11 @@ h1, h2, h3 { text-wrap: balance; }
 .cp b { color: var(--accent-text); font-weight: 500; }
 .cp.below { transform: translate(-50%, 8px); }
 .cp.side { transform: translate(12px, -50%); }
+.toast { position: absolute; left: 50%; top: calc(var(--nav-h) + 8px); margin: 0; padding: 7px 12px; background: var(--tint); border: 1px solid var(--rule); font-size: 12px; color: var(--ink); white-space: nowrap;
+  opacity: 0; transform: translate(-50%, -8px); transition: opacity 250ms ease, transform 400ms cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.toast b { color: var(--accent-text); font-weight: 500; }
+.heart { position: absolute; left: 0; top: 0; width: 18px; height: 16px; margin: -16px 0 0 -9px; color: var(--accent); pointer-events: none; opacity: 0; will-change: transform, opacity; }
 
 /* HUD: copy panels and the route line, fixed above the stage */
 .hud { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
@@ -347,6 +353,39 @@ window.FX = {
   _dpr: [],
   onDpr(fn) { this._dpr.push(fn); },
 };
+// Easter eggs share a toast and a tiny synth: nothing loads, and sound only ever follows a click or key
+window.EGG = (() => {
+  let ac = null, el = null, t = 0;
+  const ctx = () => {
+    try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { ac = null; }
+    return ac;
+  };
+  // One enveloped voice: frequency glides f0 -> f1, gain spikes then decays
+  function voice(a, at, type, f0, f1, peak, dur, filter) {
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, at); o.frequency.exponentialRampToValueAtTime(f1, at + dur);
+    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(peak, at + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    let out = o;
+    if (filter) { const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filter; o.connect(f); out = f; }
+    out.connect(g).connect(a.destination); o.start(at); o.stop(at + dur + 0.02);
+  }
+  return {
+    pop() { const a = ctx(); if (a) voice(a, a.currentTime, 'sine', 480 + Math.random() * 220, 130, 0.16, 0.11); },
+    woof() { const a = ctx(); if (!a) return; [0, 0.17].forEach((d, i) => voice(a, a.currentTime + d, 'sawtooth', 420 - i * 40, 190, 0.09, 0.13, 900)); },
+    // Bike bell: two strikes, three inharmonic partials each
+    bell() {
+      const a = ctx(); if (!a) return;
+      [0, 0.17].forEach((d) => [[1, 0.1, 0.9], [2.32, 0.05, 0.5], [4.25, 0.025, 0.25]].forEach(([r, g, len]) =>
+        voice(a, a.currentTime + d, 'sine', 1520 * r, 1500 * r, g, len)));
+    },
+    toast(html, ms) {
+      if (!el) { el = document.createElement('p'); el.className = 'toast mono'; el.setAttribute('role', 'status'); document.getElementById('hud').appendChild(el); }
+      el.innerHTML = html; el.classList.add('on');
+      clearTimeout(t); t = setTimeout(() => el.classList.remove('on'), ms || 2200);
+    },
+  };
+})();
+console.log('%cHello, fellow view-sourcer.', 'font: italic 18px Georgia, serif', '\nThe island has six clouds. Pop them all before they grow back. Pat the dog. On the road, press B.');
 (function () {
   const FX = window.FX, steps = [1.25, 1];
   let last = 0, slow = 0, n = 0;
@@ -561,46 +600,80 @@ window.FX = {
   if (reduce) { FX.crag.in = 1; FX.ride.in = 1; }
 
   // Clouds are painted, not modelled: stacks of soft radial puffs, a lit one over a shaded one for volume
-  // Colours are baked in per theme: a live var here would re-raster every cloud layer on each scroll frame
+  // Baked once into half-res canvases: as CSS gradients the dive layers re-rastered on every frame they moved
+  const CK = 0.5;
+  function bake(el, ops) {
+    let c = el.querySelector('canvas.puffs');
+    if (!c) { c = document.createElement('canvas'); c.className = 'puffs'; c.setAttribute('aria-hidden', 'true'); el.prepend(c); }
+    const W = el.offsetWidth, H = el.offsetHeight;
+    c.width = Math.max(1, Math.round(W * CK)); c.height = Math.max(1, Math.round(H * CK));
+    const g = c.getContext('2d');
+    g.setTransform(CK, 0, 0, CK, 0, 0);
+    // First listed sits on top, as it did in the background stack
+    for (let i = ops.length - 1; i >= 0; i--) ops[i](g, W, H);
+  }
+  const clear = (c) => { const [r, gg, b] = hex(c); return 'rgba(' + r + ',' + gg + ',' + b + ',0)'; };
+  const puff = (c, w, h, x, y) => (g, W, H) => {
+    const ww = w(W, H), hh = h(W, H);
+    g.save(); g.translate(x(W, H), y(W, H)); g.scale(ww, hh);
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+    gr.addColorStop(0, c); gr.addColorStop(0.55, c); gr.addColorStop(1, clear(c));
+    g.fillStyle = gr; g.fillRect(-1, -1, 2, 2); g.restore();
+  };
+  const vw = (n) => () => n * innerWidth / 100, vh = (n) => () => n * innerHeight / 100;
+  const pw = (n) => (W) => n * W / 100, ph = (n) => (W, H) => n * H / 100, up = (n) => (W, H) => H - n * innerHeight / 100;
   paintClouds = function () {
     let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const dark = effectiveDark(), sky = SKY[dark ? 'dark' : 'light'].hero[0];
     const lit = dark ? '#2a3540' : '#fbf7f1', shade = mix(lit, sky, 0.18);
-    const puff = (c, w, h, x, y) => 'radial-gradient(' + w + ' ' + h + ' at ' + x + ' ' + y + ', ' + c + ' 0 55%, transparent 100%)';
     // Bank: puffy top and bottom edges, solid between, tall enough to cover the screen mid-dive
     const hi = [], lo = [];
     for (let i = 0; i <= 18; i++) {
-      const x = (i / 18 * 100 + (r() - 0.5) * 4).toFixed(1) + '%', w = (9 + r() * 9).toFixed(1) + 'vw', h = (7 + r() * 8).toFixed(1) + 'vh';
-      const yt = (14 + r() * 8).toFixed(1), yb = (14 + r() * 8).toFixed(1);
-      hi.push(puff(lit, w, h, x, yt + 'vh'), puff(lit, w, h, x, 'calc(100% - ' + yb + 'vh)'));
-      lo.push(puff(shade, w, h, x, (+yt + 2.4) + 'vh'), puff(shade, w, h, x, 'calc(100% - ' + (yb - 2.4) + 'vh)'));
+      const x = pw(i / 18 * 100 + (r() - 0.5) * 4), w = vw(9 + r() * 9), h = vh(7 + r() * 8);
+      const yt = 14 + r() * 8, yb = 14 + r() * 8;
+      hi.push(puff(lit, w, h, x, vh(yt)), puff(lit, w, h, x, up(yb)));
+      lo.push(puff(shade, w, h, x, vh(yt + 2.4)), puff(shade, w, h, x, up(yb - 2.4)));
     }
     // Inside the bank: soft billows drifting past, so the dive never reads as a blank screen
     const mid = [], deep = mix(lit, sky, 0.12);
     // Billows sit on their own layer that outruns the bank, which is what sells the speed of the dive
     for (let i = 0; i < 22; i++) {
       const x = r() * 100, y = 8 + r() * 84, w = 12 + r() * 16, h = 7 + r() * 10;
-      mid.push(puff(lit, w.toFixed(1) + 'vw', h.toFixed(1) + 'vh', x.toFixed(1) + '%', y.toFixed(1) + '%'),
-        puff(deep, w.toFixed(1) + 'vw', h.toFixed(1) + 'vh', x.toFixed(1) + '%', 'calc(' + y.toFixed(1) + '% + ' + (h * 0.45).toFixed(1) + 'vh)'));
+      mid.push(puff(lit, vw(w), vh(h), pw(x), ph(y)),
+        puff(deep, vw(w), vh(h), pw(x), (W, H) => y * H / 100 + h * 0.45 * innerHeight / 100));
     }
-    const fill = 'linear-gradient(transparent 19vh, ' + lit + ' 24vh, ' + lit + ' calc(100% - 24vh), transparent calc(100% - 19vh))';
-    const bank = hi.concat(fill, lo).join(',');
-    $('#wipe').style.backgroundImage = bank;
-    $('#wipe2').style.backgroundImage = bank;
-    document.querySelectorAll('.billow').forEach((b) => { b.style.backgroundImage = mid.join(','); });
+    const fill = (g, W, H) => {
+      const v = innerHeight / 100, gr = g.createLinearGradient(0, 0, 0, H);
+      gr.addColorStop(19 * v / H, clear(lit)); gr.addColorStop(24 * v / H, lit);
+      gr.addColorStop(1 - 24 * v / H, lit); gr.addColorStop(1 - 19 * v / H, clear(lit));
+      g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    };
+    const bank = hi.concat(fill, lo);
+    ['#wipe', '#wipe2'].forEach((id) => bake($(id), bank));
+    document.querySelectorAll('.billow').forEach((b) => bake(b, mid));
     // Sea: a 2-wide strip of puffs that repeats at its halfway point, so the drift loops without a seam
     function sea(el, n, base) {
       const a = [], b = [];
       for (let i = 0; i < n; i++) {
-        const x = i / n * 50 + r() * 2, w = (6 + r() * 10).toFixed(1) + 'vw', h = (8 + r() * 16).toFixed(1) + '%', y = 36 + r() * 46;
-        [x, x + 50].forEach((xx) => { a.push(puff(lit, w, h, xx.toFixed(1) + '%', y.toFixed(1) + '%')); b.push(puff(shade, w, h, xx.toFixed(1) + '%', (y + 6).toFixed(1) + '%')); });
+        const x = i / n * 50 + r() * 2, w = vw(6 + r() * 10), h = ph(8 + r() * 16), y = 36 + r() * 46;
+        [x, x + 50].forEach((xx) => { a.push(puff(lit, w, h, pw(xx), ph(y))); b.push(puff(shade, w, h, pw(xx), ph(y + 6))); });
       }
-      el.style.backgroundImage = a.concat('linear-gradient(transparent ' + base + '%, ' + lit + ' 96%)', b).join(',');
+      const floor = (g, W, H) => {
+        const gr = g.createLinearGradient(0, 0, 0, H);
+        gr.addColorStop(base / 100, clear(lit)); gr.addColorStop(0.96, lit); gr.addColorStop(1, lit);
+        g.fillStyle = gr; g.fillRect(0, 0, W, H);
+      };
+      bake(el, a.concat(floor, b));
     }
     sea($('#seab'), 14, 50);
     sea($('#seaf'), 11, 62);
   };
   paintClouds();
+  let cloudT = 0, cloudW = innerWidth, cloudH = innerHeight;
+  addEventListener('resize', () => {
+    clearTimeout(cloudT);
+    cloudT = setTimeout(() => { if (innerWidth === cloudW && Math.abs(innerHeight - cloudH) < 120) return; cloudW = innerWidth; cloudH = innerHeight; paintClouds(); }, 200);
+  });
 
   const hand = (trigger, endTrigger) => ({ trigger, start: 'bottom bottom', endTrigger, end: 'top top', scrub: true, invalidateOnRefresh: true, onUpdate: sync, onRefresh: sync });
 
@@ -808,11 +881,126 @@ const CLAY = !window.THREE ? null : (function () {
     });
     return { hemi, sun, amb };
   }
+  // Reflections for the shiny bits: a tiny gradient sky with the sun in it, baked into an env map per theme.
+  // Call after the scene's lights so the sun has moved for the theme first.
+  function shine(renderer, sun, mats) {
+    const pmrem = new THREE.PMREMGenerator(renderer), env = new THREE.Scene();
+    const sky = new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false,
+      uniforms: { top: { value: new THREE.Color() }, mid: { value: new THREE.Color() }, low: { value: new THREE.Color() } },
+      vertexShader: 'varying vec3 vD; void main() { vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      // r128 PMREM targets are RGBE, so encode on the way out
+      fragmentShader: 'uniform vec3 top, mid, low; varying vec3 vD; void main() { float y = vD.y; gl_FragColor = linearToOutputTexel(vec4(y > 0.0 ? mix(mid, top, pow(y, 0.6)) : mix(mid, low, pow(-y, 0.35)), 1.0)); }',
+    });
+    const disc = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 8), new THREE.MeshBasicMaterial());
+    env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), sky), disc);
+    let rt = null;
+    onTheme((dark) => {
+      sky.uniforms.top.value.set(dark ? 0x2a3554 : 0xdce8f4);
+      sky.uniforms.mid.value.set(dark ? 0x6a5a66 : 0xffe4bc);
+      sky.uniforms.low.value.set(dark ? 0x1e2a24 : 0x8f9a6a);
+      disc.material.color.set(dark ? 0xb4c4ec : 0xfff0d8).multiplyScalar(dark ? 2 : 5);
+      disc.position.copy(sun.position).normalize().multiplyScalar(8);
+      if (rt) rt.dispose();
+      rt = pmrem.fromScene(env, 0.02);
+      mats.forEach((m) => { m.envMap = rt.texture; m.needsUpdate = true; });
+    });
+  }
+  // Rim light from behind: warm by day, cool by night. Catches edges against the light
+  function rim(scene, x, y, z, k) {
+    const l = new THREE.DirectionalLight(0xffb27a, 0.4 * k);
+    l.position.set(x, y, z);
+    scene.add(l);
+    onTheme((dark) => { l.color.set(dark ? 0x7d95c8 : 0xffb27a); l.intensity = (dark ? 0.25 : 0.4) * k; });
+    return l;
+  }
+  // World-sized point size: pixels per world unit at distance 1
+  const pxScale = (renderer, camera, h) => h * renderer.getPixelRatio() / (2 * Math.tan(camera.fov * Math.PI / 360));
+  const glow = `
+    uniform vec3 uColor; uniform float uAlpha; varying float vA;
+    void main() {
+      float r = length(gl_PointCoord - 0.5);
+      float a = smoothstep(0.5, 0.0, r) * 0.45 + smoothstep(0.16, 0.04, r);
+      gl_FragColor = vec4(uColor, a * vA * uAlpha);
+    }`;
+  function points(parent, n, seed, m) {
+    const g = new THREE.BufferGeometry(), s = new Float32Array(n * 4), rnd = rng(seed);
+    for (let i = 0; i < s.length; i++) s[i] = rnd();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+    g.setAttribute('seed', new THREE.BufferAttribute(s, 4));
+    const p = new THREE.Points(g, m);
+    p.frustumCulled = false;
+    parent.add(p);
+    return p;
+  }
+  // Motes: a fixed field drifting in a box around uCenter (parent space). Moving the centre wraps the field
+  // along, so it never runs out. uKeep thins it, uTop fades it out above a height, uRound fades to a disc.
+  function motes(parent, n, box, seed) {
+    const u = {
+      uTime: { value: 0 }, uCenter: { value: V(0, 0, 0) }, uBox: { value: box }, uSize: { value: 0.1 }, uPx: { value: 500 },
+      uColor: { value: new THREE.Color() }, uAlpha: { value: 1 }, uBlink: { value: 0 }, uKeep: { value: 1 }, uRise: { value: 1 },
+      uTop: { value: 1e4 }, uRound: { value: 0 },
+    };
+    const m = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: u, fragmentShader: glow,
+      vertexShader: `
+        uniform float uTime, uSize, uPx, uBlink, uKeep, uRise, uTop, uRound; uniform vec3 uCenter, uBox;
+        attribute vec4 seed; varying float vA;
+        void main() {
+          float t = uTime, ph = seed.w * 6.2832;
+          vec3 drift = vec3(sin(t * 0.31 + ph) * 0.7, sin(t * 0.23 + seed.x * 6.2832) * 0.5 * uRise + t * 0.06 * uRise, cos(t * 0.27 + seed.y * 6.2832) * 0.7);
+          vec3 p = uCenter + mod(seed.xyz * uBox + drift - uCenter + uBox * 0.5, uBox) - uBox * 0.5;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          vec3 q = abs(p - uCenter) / (uBox * 0.5);
+          float edge = 1.0 - smoothstep(0.65, 1.0, mix(max(q.x, max(q.y, q.z)), max(length(q.xz), q.y), uRound));
+          float tw = 0.6 + 0.4 * sin(t * (1.3 + seed.x * 2.0) + ph * 7.0);
+          float blink = pow(max(sin(t * (0.6 + seed.y) + ph * 5.0), 0.0), 6.0);
+          float d = -mv.z;
+          vA = edge * mix(tw, blink, uBlink) * smoothstep(0.5, 2.0, d) * (1.0 - smoothstep(uTop - 0.5, uTop, p.y)) * step(fract(seed.w * 37.17), uKeep);
+          gl_PointSize = vA > 0.0 ? uSize * (0.35 + seed.y * seed.y * 1.6) * uPx / d : 0.0;
+        }`,
+    });
+    const pts = points(parent, n, seed, m);
+    return { u, pts, fit: (renderer, camera, h) => { u.uPx.value = pxScale(renderer, camera, h); } };
+  }
+  // Spray from a point: loops (embers off a fire) or one burst per fire(t) (chalk off a hand).
+  // Each particle flies out along its own direction, rises, wobbles, swells and fades.
+  function spray(parent, n, seed, o) {
+    const u = {
+      uTime: { value: 0 }, uT0: { value: -1e4 }, uLife: { value: o.life }, uLoop: { value: o.loop ? 1 : 0 },
+      uOrigin: { value: o.at || V(0, 0, 0) }, uSpread: { value: o.spread }, uRise: { value: o.rise }, uWob: { value: o.wob || 0 },
+      uGrow: { value: o.grow || 0 }, uFlick: { value: o.flick || 0 }, uSize: { value: o.size }, uPx: { value: 500 },
+      uColor: { value: new THREE.Color(o.color) }, uAlpha: { value: 1 },
+    };
+    const m = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: o.add ? THREE.AdditiveBlending : THREE.NormalBlending, uniforms: u, fragmentShader: glow,
+      vertexShader: `
+        uniform float uTime, uT0, uLife, uLoop, uSpread, uRise, uWob, uGrow, uFlick, uSize, uPx; uniform vec3 uOrigin;
+        attribute vec4 seed; varying float vA;
+        void main() {
+          float ph = seed.w * 6.2832;
+          float u = uLoop > 0.5 ? fract(uTime / uLife + seed.w) : (uTime - uT0) / (uLife * (0.6 + 0.4 * seed.w));
+          vec3 dir = normalize(seed.xyz - 0.5 + 1e-3);
+          float e = 1.0 - pow(1.0 - clamp(u, 0.0, 1.0), 3.0);
+          vec3 p = uOrigin + dir * uSpread * e + vec3(sin(u * 9.0 + ph) * uWob, uRise * u * (0.5 + seed.y), cos(u * 7.0 + ph) * uWob);
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          float live = step(0.0, u) * step(u, 1.0);
+          vA = live * pow(1.0 - clamp(u, 0.0, 1.0), 1.5) * smoothstep(0.0, 0.08, u) * mix(1.0, 0.5 + 0.5 * sin(uTime * 23.0 + ph * 9.0), uFlick);
+          gl_PointSize = live * uSize * (0.5 + seed.y) * (1.0 + u * uGrow) * uPx / -mv.z;
+        }`,
+    });
+    const pts = points(parent, n, seed, m);
+    return { u, pts, fire(t, at) { u.uT0.value = t; if (at) u.uOrigin.value.copy(at); }, fit: (renderer, camera, h) => { u.uPx.value = pxScale(renderer, camera, h); } };
+  }
   // Low-poly models from models/ (credits in models/CREDITS.md). Loaded once and shared.
   // Resolves null on any failure (offline, file://), so each scene keeps its built stand-in.
   // Files are meshopt-compressed (gltf-transform prune + meshopt), so load the decoder first.
   const glbs = {};
-  let loader;
+  let loader, primeT = 0;
+  // Once models land, every scene draws one frame while hidden, so shader compiles and uploads happen off-screen, not mid-dive
+  function prime() { clearTimeout(primeT); primeT = setTimeout(() => dispatchEvent(new Event('fx:prime')), 150); }
   function model(name) {
     if (!THREE.GLTFLoader) return Promise.resolve(null);
     loader = loader || import('https://cdn.jsdelivr.net/npm/meshoptimizer@1.3.0/meshopt_decoder.mjs')
@@ -832,6 +1020,7 @@ const CLAY = !window.THREE ? null : (function () {
           m.roughness = 0.9; m.metalness = 0;
         });
         done(g);
+        prime();
       }, undefined, () => done(null));
     })));
   }
@@ -887,7 +1076,7 @@ const CLAY = !window.THREE ? null : (function () {
     const tip = (from, bone) => from.worldToLocal(bone.getWorldPosition(V(0, 0, 0)));
     return { b, reset, aim, reach, put, tip };
   }
-  return { V, rng, mat, shadowy, bar, limb, isDark, onTheme, lights, model, recolor, rig };
+  return { V, rng, mat, shadowy, bar, limb, isDark, onTheme, lights, rim, shine, motes, spray, model, recolor, rig };
 })();
 </script>
 <script>
@@ -1241,7 +1430,7 @@ const CLAY = !window.THREE ? null : (function () {
   world.add(rider);
 
   // ---- Models: swap in the low-poly bike, rider, dog and camp once loaded; the built ones above are the fallback ----
-  const RP = { S: 0.62, k: 0.85, seatY: 0.8, seatZ: -0.03, lean: 0.85, arm: 1.15, rack: 0.05, look: 0.35, palm: 0.08 }; // fit of rider to bike
+  const RP = { S: 0.62, k: 0.85, seatY: 0.8, seatZ: -0.03, lean: 0.12, arm: 1.15, rack: 0.05, look: 0.35, palm: 0.08 }; // fit of rider to bike
   function mountRider(bikeSrc, guySrc) {
     const g = new THREE.Group(); g.scale.setScalar(RP.S); rider.add(g);
     // Bike, modelled in mm: split out the wheels and the crankset so they can turn
@@ -1386,6 +1575,16 @@ const CLAY = !window.THREE ? null : (function () {
   applyTheme();
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
   new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  // Rim from behind the massif; the lake mirrors a little sky
+  CLAY.rim(scene, -4, 3, -8, 0.8);
+  lake.material.metalness = 0.2; lake.material.roughness = 0.12;
+  CLAY.shine(renderer, sun, [lake.material]);
+  // Fireflies over the island by night; embers off the campfire, day and night
+  const flies = CLAY.motes(world, small ? 50 : 110, CLAY.V(10.5, 1.4, 10.5), 11);
+  flies.u.uRound.value = 1; flies.u.uCenter.value.set(0, 0.8, 0); flies.u.uBlink.value = 1;
+  flies.u.uColor.value.set(0xd9ff8a); flies.u.uSize.value = 0.18; flies.u.uRise.value = 0.4;
+  const embers = camp && CLAY.spray(camp.fire, 18, 5, { loop: true, life: 1.6, at: CLAY.V(0, 0.15, 0), spread: 0.05, rise: 0.9, wob: 0.04, size: 0.045, flick: 1, color: 0xffa040, add: true });
+  CLAY.onTheme((dark) => { flies.pts.visible = dark; if (embers) embers.u.uAlpha.value = dark ? 1 : 0.8; });
 
   let vw = 1, vh = 1;
   // Pin an HTML label to a projected point, kept fully inside the canvas
@@ -1402,6 +1601,8 @@ const CLAY = !window.THREE ? null : (function () {
     const aspect = w / h;
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
+    flies.fit(renderer, camera, h);
+    if (embers) embers.fit(renderer, camera, h);
     dist = 0;
     wrap.querySelectorAll('.cp').forEach((el) => { el._hw = 0; });
   }
@@ -1461,6 +1662,57 @@ const CLAY = !window.THREE ? null : (function () {
   });
   wrap.addEventListener('pointerleave', () => { tx = 0; ty = 0; });
 
+  // Easter egg: the clay clouds pop. Clear all six before they grow back; the dog likes a pat
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), bits = [];
+  let hover = null, pats = 0, hop = -9, heartAt = -9;
+  const heart = document.createElement('div');
+  heart.className = 'heart'; heart.setAttribute('aria-hidden', 'true');
+  heart.innerHTML = '<svg viewBox="0 0 18 16" width="18" height="16"><path fill="currentColor" d="M9 15.5 1.7 8.6A4.4 4.4 0 0 1 9 3.1a4.4 4.4 0 0 1 7.3 5.5Z"/></svg>';
+  wrap.appendChild(heart);
+  function pick(e) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const live = clouds.filter((c) => !c.userData.gone);
+    if (camp && camp.g.visible && camp.g.scale.x > 0.6) live.push(camp.dog);
+    const h = ray.intersectObjects(live, true)[0];
+    if (!h) return null;
+    let o = h.object;
+    while (o && !live.includes(o)) o = o.parent;
+    return o;
+  }
+  function popCloud(c, t) {
+    const u = c.userData;
+    u.gone = t; u.back = t + 7;
+    window.EGG.pop();
+    if (!reduce.matches) {
+      for (let k = 0; k < 7; k++) {
+        const b = new THREE.Mesh(puff, cloudM), a = k / 7 * Math.PI * 2;
+        b.position.copy(c.position);
+        b.userData = { v: V(Math.cos(a) * 1.6, 0.6 + Math.random() * 1.2, Math.sin(a) * 1.6), t, r: (0.14 + Math.random() * 0.1) * u.s };
+        bits.push(b); world.add(b);
+      }
+    }
+    const n = clouds.filter((q) => q.userData.gone).length;
+    if (n === clouds.length) {
+      window.EGG.toast('Clear skies. <b>Good sending weather.</b>', 3200);
+      clouds.forEach((q, k) => { q.userData.back = t + 4 + k * 0.35; });
+    } else window.EGG.toast('Cloud popped <b>' + n + '/' + clouds.length + '</b>');
+  }
+  wrap.addEventListener('click', (e) => {
+    const o = pick(e), t = performance.now() / 1000;
+    if (!o) return;
+    if (o === camp?.dog) {
+      hop = heartAt = t; pats++;
+      window.EGG.woof();
+      if (pats === 1) window.EGG.toast('Good dog.');
+      else if (pats === 5) window.EGG.toast('Okay, <b>that is enough pats.</b>');
+    } else popCloud(o, t);
+    if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  });
+  let hoverE = null;
+  if (matchMedia('(hover: hover)').matches) wrap.addEventListener('pointermove', (e) => { hoverE = e; });
+
   const tmp = new THREE.Vector3();
   function place(t) {
     const p = route.getPointAt(t), tan = route.getTangentAt(t);
@@ -1488,12 +1740,31 @@ const CLAY = !window.THREE ? null : (function () {
     world.rotation.y = -0.45 + progress * 0.7 + px * 0.08;
     world.rotation.x = py * 0.035;
     world.position.y = still ? 0 : Math.sin(time * 0.7) * 0.07;
+    if (!still) { flies.u.uTime.value = time; if (embers) embers.u.uTime.value = time; }
     clouds.forEach((c) => {
       const u = c.userData;
       c.position.y = u.y + (still ? 0 : Math.sin(time * 0.5 + u.phase) * 0.12);
       c.position.x = u.x + u.dir * progress * 0.8 + (still ? 0 : Math.sin(time * 0.12 + u.phase) * 0.35);
-      c.scale.setScalar(u.s * (still ? 1 : 1 + Math.sin(time * 0.9 + u.phase) * 0.015));
+      // Popped: swell, vanish, then grow back with a little overshoot
+      let f = 1;
+      if (u.gone) {
+        const e = time - u.gone, g = time - u.back;
+        if (g > 0) { const q = Math.min(g / 0.7, 1) - 1; f = 1 + 2.7 * q * q * q + 1.7 * q * q; if (g > 0.7) u.gone = 0; }
+        else f = e < 0.08 ? 1 + e / 0.08 * 0.25 : Math.max(0, 1.25 * (1 - (e - 0.08) / 0.16));
+      }
+      c.visible = f > 0.001;
+      c.scale.setScalar(Math.max(f, 0.001) * u.s * (still ? 1 : 1 + Math.sin(time * 0.9 + u.phase) * 0.015));
     });
+    for (let k = bits.length - 1; k >= 0; k--) {
+      const b = bits[k], u = b.userData, e = time - u.t;
+      if (e > 0.7) { world.remove(b); bits.splice(k, 1); continue; }
+      b.position.addScaledVector(u.v, dt); u.v.multiplyScalar(1 - dt * 3);
+      b.scale.setScalar(u.r * (1 - e / 0.7));
+    }
+    if (hoverE) {
+      const o = pick(hoverE); hoverE = null;
+      if (o !== hover) { hover = o; wrap.style.cursor = o ? 'pointer' : ''; }
+    }
     world.updateMatrixWorld();
     aimCamera(progress, still ? 1 : Math.min(1, dt * 5));
     // Handoff to the crag: dive the camera into the island
@@ -1532,7 +1803,15 @@ const CLAY = !window.THREE ? null : (function () {
         m.position.set(Math.sin(u * 5 + m.userData.o * 6) * 0.04, 0.4 + u * 0.55, 0);
         m.scale.setScalar(0.035 + Math.sin(u * Math.PI) * 0.05);
       });
-      camp.tail.rotation.y = still ? 0 : Math.sin(time * 10) * 0.5;
+      const pe = time - hop;
+      camp.dog.position.y = pe < 0.4 ? Math.sin(pe / 0.4 * Math.PI) * 0.16 : 0;
+      camp.tail.rotation.y = still ? 0 : Math.sin(time * (pe < 2 ? 26 : 10)) * 0.5;
+      const he = time - heartAt;
+      if (he < 1.1) {
+        camp.dog.localToWorld(tmp.set(0, 0.45, 0)).project(camera);
+        heart.style.transform = 'translate(' + ((tmp.x + 1) / 2 * wrap.clientWidth).toFixed(1) + 'px,' + ((1 - tmp.y) / 2 * wrap.clientHeight - he * 46).toFixed(1) + 'px) scale(' + (0.6 + Math.min(he * 5, 1) * 0.6).toFixed(2) + ')';
+        heart.style.opacity = (he < 0.15 ? he / 0.15 : 1 - (he - 0.15) / 0.95).toFixed(2);
+      } else if (heart.style.opacity !== '0') heart.style.opacity = '0';
       if (camp.mixer && camp.g.visible && !still) camp.mixer.update(dt);
       const on = camp.g.visible && s > 0.6 && progress < camp.end - 0.02 && !quiet;
       camp.labels.forEach((l) => {
@@ -1547,6 +1826,7 @@ const CLAY = !window.THREE ? null : (function () {
     if (FX.on) raf = requestAnimationFrame(frame);
   }
   window.FX.wake('hero', () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } });
+  addEventListener('fx:prime', () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } });
   raf = requestAnimationFrame(frame);
 })();
 </script>
@@ -1567,7 +1847,8 @@ const CLAY = !window.THREE ? null : (function () {
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   const world = new THREE.Group();
   scene.add(world);
-  lights(scene, 6);
+  const rig = lights(scene, 6);
+  CLAY.rim(scene, -4, 3, -8, 0.8);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
   const C = {
@@ -1668,7 +1949,7 @@ const CLAY = !window.THREE ? null : (function () {
   const roles = SITE.experience, n = roles.length;
   const boltY = [];
   for (let k = 0; k <= n; k++) boltY.push(1.2 + k * (H - 0.55 - 1.2) / n);
-  const metalM = mat(C.metal, { roughness: 0.4, metalness: 0.3, flatShading: false }), slingM = mat(C.sling, { flatShading: false });
+  const metalM = mat(C.metal, { roughness: 0.28, metalness: 0.85, flatShading: false }), slingM = mat(C.sling, { flatShading: false });
   const hangerG = new THREE.BoxGeometry(0.06, 0.1, 0.02), binerG = new THREE.TorusGeometry(0.032, 0.008, 6, 14), slingG = new THREE.BoxGeometry(0.03, 0.12, 0.012);
   function biner(y, parent) { const b = new THREE.Mesh(binerG, metalM); b.scale.set(1, 1.4, 1); b.position.y = y; parent.add(b); return b; }
   const tmp = V(0, 0, 0), tmp2 = V(0, 0, 0);
@@ -1699,6 +1980,15 @@ const CLAY = !window.THREE ? null : (function () {
     wrap.appendChild(el);
     return { g, qd, y, clip: y - 0.32, s: 0, v: 0, el, ropeAt: V(0, (anchor ? -0.17 : -0.03) - 0.19, 0.03), w: V(0, 0, 0) };
   });
+  CLAY.shine(renderer, rig.sun, [metalM]);
+  // A puff of chalk off each clip; fireflies round the meadow by night
+  const puff = CLAY.spray(world, 26, 17, { life: 1.6, spread: 0.34, rise: 0.12, wob: 0.03, grow: 3, size: 0.09, color: 0xf4f2ec });
+  puff.u.uAlpha.value = 0.8;
+  const flies = CLAY.motes(world, small ? 30 : 60, V(6.4, 1.2, 6.4), 13);
+  flies.u.uRound.value = 1; flies.u.uCenter.value.set(0, 0.7, 0); flies.u.uBlink.value = 1;
+  flies.u.uColor.value.set(0xd9ff8a); flies.u.uSize.value = 0.13; flies.u.uRise.value = 0.4;
+  CLAY.onTheme((dark) => { flies.pts.visible = dark; });
+  let clipped = null;
 
   // Climber: same kit as the cyclist (green shirt, black helmet), facing the wall
   const shirtM = mat(C.shirt, { flatShading: false }), skinM = mat(C.skin, { flatShading: false }), pantsM = mat(C.pants, { flatShading: false }), inkM = mat(C.ink, { flatShading: false });
@@ -1875,6 +2165,7 @@ const CLAY = !window.THREE ? null : (function () {
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    puff.fit(renderer, camera, h); flies.fit(renderer, camera, h);
     dist = 0;
     bolts.forEach((b) => { b.el._w = 0; });
   }
@@ -1934,6 +2225,9 @@ const CLAY = !window.THREE ? null : (function () {
     // Quickdraws spring on as they are clipped; only the latest keeps its label
     let cur = -1;
     bolts.forEach((b, i) => { if (hip >= b.clip - 0.005) cur = i; });
+    if (!still) { puff.u.uTime.value = time; flies.u.uTime.value = time; }
+    if (clipped !== null && cur > clipped && !still) puff.fire(time, world.worldToLocal(bolts[cur].g.localToWorld(tmp2.set(0.1, -0.05, 0.3))));
+    clipped = cur;
     const pts = [belayer.dev.localToWorld(devW.set(0, 0, 0)).clone()];
     bolts.forEach((b, i) => {
       const want = i <= cur ? 1 : 0;
@@ -1954,6 +2248,7 @@ const CLAY = !window.THREE ? null : (function () {
     if (FX.on) raf = requestAnimationFrame(frame);
   }
   window.FX.wake('crag', () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } });
+  addEventListener('fx:prime', () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } });
   raf = requestAnimationFrame(frame);
 })();
 </script>
@@ -1977,6 +2272,9 @@ const CLAY = !window.THREE ? null : (function () {
   // Fog fades into the page itself, so the far valley dissolves rather than ending
   const fog = new THREE.Fog(0xeceeea, 60, 560);
   scene.fog = fog;
+  // Warm rim from low up the road: catches the edges of trees, signs and bars against the light
+  CLAY.rim(scene, -3, 2, -10, 1);
+  const shiny = [];
   const C = {
     grass: 0x8ea67c, grass2: 0x7d9a6d, rock: 0x8497ad, rockLow: 0x5b6d83, snow: 0xf5f7f8,
     road: 0xc9b38c, verge: 0x9e9270, pine: 0x4a7654, trunk: 0x6b4d36, wood: 0x8a6a4e, boulder: 0x9aa39a,
@@ -2246,7 +2544,9 @@ const CLAY = !window.THREE ? null : (function () {
   const cockpit = new THREE.Group();
   camera.add(cockpit);
   (function () {
-    const ink = mat(C.ink), grip = mat(C.grip), rust = mat(C.bike), skin = mat(C.skin), shirt = mat(C.shirt);
+    const ink = mat(C.ink, { roughness: 0.45, metalness: 0.35 }), rust = mat(C.bike, { roughness: 0.4, metalness: 0.15 });
+    shiny.push(ink, rust);
+    const grip = mat(C.grip), skin = mat(C.skin), shirt = mat(C.shirt);
     cockpit.add(bar(0.014, ink).put(V(-0.21, -0.25, -0.56), V(0.21, -0.25, -0.56)));
     cockpit.add(bar(0.018, ink).put(V(0, -0.31, -0.49), V(0, -0.25, -0.56)));
     cockpit.add(bar(0.026, rust).put(V(0, -0.31, -0.49), V(0, -0.52, -0.57)));
@@ -2269,6 +2569,52 @@ const CLAY = !window.THREE ? null : (function () {
     strap.position.set(0, -0.33, -0.67);
     cockpit.add(bag, flap, strap);
   })();
+  // Brass bell on the left bar, inboard of the hand; group undoes the cockpit's x squash so the dome stays round
+  const bellG = new THREE.Group(), dome = new THREE.Group(), lever = new THREE.Group();
+  bellG.position.set(-0.155, -0.25, -0.56);
+  cockpit.add(bellG);
+  (function () {
+    const brass = mat(0xe3b04a, { roughness: 0.22, metalness: 0.9, flatShading: false });
+    const steel = mat(0xc4c8c4, { roughness: 0.3, metalness: 0.9, flatShading: false });
+    shiny.push(brass, steel);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.0165, 0.0035, 6, 16), steel);
+    band.rotation.y = Math.PI / 2;
+    bellG.add(band, bar(0.004, steel).put(V(0, 0.015, 0), V(0, 0.024, 0)));
+    dome.position.y = 0.024;
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.03, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), brass);
+    cap.scale.y = 0.62;
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.0295, 0.0022, 6, 28), brass);
+    lip.rotation.x = Math.PI / 2;
+    const nub = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 10, 6), steel);
+    nub.position.y = 0.019;
+    dome.add(cap, lip, nub);
+    // Thumb lever pokes out from under the dome toward the left grip
+    lever.position.set(-0.012, 0.02, 0.012);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.003, 0.006), steel);
+    arm.position.set(-0.017, 0, 0.004); arm.rotation.y = -0.35;
+    const tab = new THREE.Mesh(new THREE.CylinderGeometry(0.0055, 0.0055, 0.004, 12), steel);
+    tab.position.set(-0.033, 0.001, 0.01);
+    lever.add(arm, tab);
+    bellG.add(dome, lever);
+  })();
+  CLAY.shine(renderer, rig.sun, shiny);
+
+  // Motes in the air: fireflies by night; by day, a few golden seeds low over the verges (white specks up high read as snow).
+  // A fixed field in world space, wrapped into a box that travels just ahead of the camera, so it never runs out
+  const BOX = V(16, 5, 22), motes = CLAY.motes(scene, small ? 360 : 700, BOX, 31);
+  let moteY = 0.6, moteTop = 1e4;
+  onTheme((dark) => {
+    const u = motes.u;
+    u.uColor.value.set(dark ? 0xd9ff8a : 0xffc65c);
+    u.uAlpha.value = dark ? 1 : 0.9;
+    u.uBlink.value = dark ? 1 : 0;
+    u.uSize.value = dark ? 0.15 : 0.065;
+    u.uKeep.value = dark ? 1 : 0.35;
+    u.uRise.value = dark ? 1 : 0.15;
+    BOX.y = dark ? 5 : 1.6;
+    moteY = dark ? 0.6 : -0.75;
+    moteTop = dark ? 1e4 : -0.45;
+  });
 
   function resize() {
     const w = wrap.clientWidth, h = wrap.clientHeight;
@@ -2278,6 +2624,8 @@ const CLAY = !window.THREE ? null : (function () {
     camera.updateProjectionMatrix();
     // Narrow canvases pull the bars in so the grips stay in frame
     cockpit.scale.x = 0.7 * clamp(w / h, 0.75, 1.15);
+    bellG.scale.x = 1 / cockpit.scale.x;
+    motes.fit(renderer, camera, h);
   }
   new ResizeObserver(resize).observe(wrap);
   resize();
@@ -2296,6 +2644,29 @@ const CLAY = !window.THREE ? null : (function () {
     tx = ((e.clientX - r.left) / r.width - 0.5) * 2; ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
   });
   wrap.addEventListener('pointerleave', () => { tx = 0; ty = 0; });
+  // Easter egg: a bell on the bars. Click them, or press B anywhere on the ride
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let ring = -9, rings = 0, overBars = false;
+  function onBars(e) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    return ray.intersectObject(cockpit, true).length > 0;
+  }
+  function bell() {
+    ring = performance.now() / 1000; rings++;
+    window.EGG.bell();
+    window.EGG.toast(rings % 4 === 0 ? 'Ding ding. <b>Nobody is passing, I promise.</b>' : 'Ding ding. <b>On your left.</b>');
+    if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); }
+  }
+  wrap.addEventListener('click', (e) => { if (onBars(e)) bell(); });
+  if (matchMedia('(hover: hover)').matches) wrap.addEventListener('pointermove', (e) => {
+    const o = onBars(e);
+    if (o !== overBars) { overBars = o; wrap.style.cursor = o ? 'pointer' : ''; }
+  });
+  addEventListener('keydown', (e) => {
+    if ((e.key === 'b' || e.key === 'B') && FX.on && FX.in > 0.9 && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !(e.target.closest && e.target.closest('input, textarea, [contenteditable]'))) bell();
+  });
   const cp = V(0, 0, 0), ct = V(0, 0, 0), ct2 = V(0, 0, 0), cr = V(0, 0, 0), look = V(0, 0, 0);
 
   let raf = 0, lastT = performance.now();
@@ -2327,15 +2698,25 @@ const CLAY = !window.THREE ? null : (function () {
     const turn = ct.z * ct2.x - ct.x * ct2.z;
     roll += (clamp(turn * 2.5, -0.07, 0.07) * go - roll) * k;
     camera.rotateZ(roll);
-    cockpit.rotation.z = Math.sin(phase) * 0.018 * go;
+    const re = performance.now() / 1000 - ring;
+    cockpit.rotation.z = Math.sin(phase) * 0.018 * go + (re < 0.6 ? Math.sin(re * 38) * Math.exp(-re * 7) * 0.035 : 0);
     cockpit.position.y = -Math.abs(Math.cos(phase)) * 0.006 * go;
+    // Lever flicks and snaps back; dome shivers as it rings out
+    const hit = re < 1.2 ? Math.exp(-re * 5) : 0;
+    lever.rotation.y = re < 0.25 ? Math.sin(re / 0.25 * Math.PI) * 0.9 : 0;
+    dome.rotation.z = Math.sin(re * 70) * hit * 0.05;
+    dome.rotation.x = Math.cos(re * 63) * hit * 0.035;
     // Handoff from the crag: start looking up at the same sky, then tilt down to the road
     const pitch = 1 - FX.in;
     if (pitch > 0) { const e = pitch * pitch * (3 - 2 * pitch); camera.rotateX(e * 0.62); cockpit.position.y -= e * 0.6; }
+    if (!still) motes.u.uTime.value = now / 1000;
+    motes.u.uCenter.value.set(0, moteY, -BOX.z * 0.42).applyQuaternion(camera.quaternion).add(camera.position);
+    motes.u.uTop.value = camera.position.y + moteTop;
     renderer.render(scene, camera);
     if (FX.on) raf = requestAnimationFrame(frame);
   }
   window.FX.wake('ride', () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } });
+  addEventListener('fx:prime', () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } });
   raf = requestAnimationFrame(frame);
 })();
 </script>
